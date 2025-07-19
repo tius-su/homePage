@@ -129,6 +129,26 @@
                             <label>Session 2 Background</label>
                             <input type="color" id="session2-bg-color" value="#f8f9fa" onchange="updateSessionColor('session2', this.value)">
                         </div>
+                        <div class="form-group">
+                            <label>Session 3 Background</label>
+                            <input type="color" id="session3-bg-color" value="#ffffff" onchange="updateSessionColor('session3', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Session 4 Background</label>
+                            <input type="color" id="session4-bg-color" value="#f8f9fa" onchange="updateSessionColor('session4', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Session 5 Background</label>
+                            <input type="color" id="session5-bg-color" value="#ffffff" onchange="updateSessionColor('session5', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Session 6 Background</label>
+                            <input type="color" id="session6-bg-color" value="#f8f9fa" onchange="updateSessionColor('session6', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Session 7 Background</label>
+                            <input type="color" id="session7-bg-color" value="#ffffff" onchange="updateSessionColor('session7', this.value)">
+                        </div>
                     </div>
                     
                     <!-- Font Settings -->
@@ -188,9 +208,9 @@
                         </div>
                     </div>
                     
-                    <!-- Layout Settings -->
+                    <!-- Layout & Visibility Settings -->
                     <div class="settings-card">
-                        <h3>Layout Settings</h3>
+                        <h3>Layout & Visibility Settings</h3>
                         <div class="form-group">
                             <label>Session 5 Grid Layout</label>
                             <select id="session5-layout" onchange="updateGridLayout(this.value)">
@@ -211,6 +231,81 @@
                             <label>Show/Hide Session 7</label>
                             <input type="checkbox" id="show-session7" onchange="toggleSection('session7', this.checked)">
                         </div>
+
+                        <!-- Column Visibility Controls -->
+                        <h4>Column Visibility</h4>
+                        <!-- Session 2 Columns -->
+                        <h5>Session 2</h5>
+                        <div class="form-group">
+                            <label>Show Column 1</label>
+                            <input type="checkbox" id="show-session2-col1" checked onchange="toggleColumnVisibility('session2-col1', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 2</label>
+                            <input type="checkbox" id="show-session2-col2" checked onchange="toggleColumnVisibility('session2-col2', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 3</label>
+                            <input type="checkbox" id="show-session2-col3" checked onchange="toggleColumnVisibility('session2-col3', this.checked)">
+                        </div>
+                        <!-- Session 3 Columns -->
+                        <h5>Session 3</h5>
+                        <div class="form-group">
+                            <label>Show Column 1</label>
+                            <input type="checkbox" id="show-session3-col1" checked onchange="toggleColumnVisibility('session3-col1', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 2</label>
+                            <input type="checkbox" id="show-session3-col2" checked onchange="toggleColumnVisibility('session3-col2', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 3</label>
+                            <input type="checkbox" id="show-session3-col3" checked onchange="toggleColumnVisibility('session3-col3', this.checked)">
+                        </div>
+                        <!-- Session 4 Columns -->
+                        <h5>Session 4</h5>
+                        <div class="form-group">
+                            <label>Show Column 1</label>
+                            <input type="checkbox" id="show-session4-col1" checked onchange="toggleColumnVisibility('session4-col1', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 2</label>
+                            <input type="checkbox" id="show-session4-col2" checked onchange="toggleColumnVisibility('session4-col2', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 3</label>
+                            <input type="checkbox" id="show-session4-col3" checked onchange="toggleColumnVisibility('session4-col3', this.checked)">
+                        </div>
+                        <!-- Session 5 Columns -->
+                        <h5>Session 5</h5>
+                        <div class="form-group">
+                            <label>Show Column 1</label>
+                            <input type="checkbox" id="show-session5-col1" checked onchange="toggleColumnVisibility('session5-col1', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 2</label>
+                            <input type="checkbox" id="show-session5-col2" checked onchange="toggleColumnVisibility('session5-col2', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 3</label>
+                            <input type="checkbox" id="show-session5-col3" checked onchange="toggleColumnVisibility('session5-col3', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show Column 4</label>
+                            <input type="checkbox" id="show-session5-col4" checked onchange="toggleColumnVisibility('session5-col4', this.checked)">
+                        </div>
+                        <!-- Session 6 Columns (for Gallery) -->
+                        <h5>Session 6 (Gallery)</h5>
+                        <div class="form-group">
+                            <label>Show Gallery Section</label>
+                            <input type="checkbox" id="show-session6-gallery" checked onchange="toggleColumnVisibility('session6', this.checked)">
+                        </div>
+                        <!-- Session 7 Columns (for Gallery) -->
+                        <h5>Session 7 (Gallery)</h5>
+                        <div class="form-group">
+                            <label>Show Gallery Section</label>
+                            <input type="checkbox" id="show-session7-gallery" checked onchange="toggleColumnVisibility('session7', this.checked)">
+                        </div>
                     </div>
                 </div>
             </section>
@@ -228,6 +323,8 @@
                     <button class="tab-btn" onclick="showContentTab('session3-content')">Session 3</button>
                     <button class="tab-btn" onclick="showContentTab('session4-content')">Session 4</button>
                     <button class="tab-btn" onclick="showContentTab('session5-content')">Session 5</button>
+                    <button class="tab-btn" onclick="showContentTab('session6-content')">Session 6 (Gallery)</button>
+                    <button class="tab-btn" onclick="showContentTab('session7-content')">Session 7 (Gallery)</button>
                 </div>
                 
                 <!-- Session 1 Content -->
@@ -283,17 +380,188 @@
                     <button onclick="saveSessionContent('session2')" class="btn btn-success">Save Changes</button>
                 </div>
                 
-                <!-- Additional content tabs would be similar -->
+                <!-- Session 3 Content -->
                 <div id="session3-content" class="content-tab">
-                    <p>Session 3 content editing will be implemented here...</p>
+                    <div class="form-group">
+                        <label>Section Heading</label>
+                        <input type="text" id="edit-session3-heading" placeholder="Section heading">
+                    </div>
+                    
+                    <h4>Column 1</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session3-col1-heading" placeholder="Column 1 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session3-col1-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <h4>Column 2 (Part 1)</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session3-col2-part1-heading" placeholder="Column 2 Part 1 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session3-col2-part1-content" class="tinymce-editor"></textarea>
+                    </div>
+
+                    <h4>Column 2 (Part 2)</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session3-col2-part2-heading" placeholder="Column 2 Part 2 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session3-col2-part2-content" class="tinymce-editor"></textarea>
+                    </div>
+
+                    <h4>Column 3 (New Column)</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session3-col3-heading" placeholder="Column 3 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session3-col3-content" class="tinymce-editor"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Enable Read More</label>
+                        <input type="checkbox" id="edit-session3-col3-readmore">
+                    </div>
+
+                    <button onclick="saveSessionContent('session3')" class="btn btn-success">Save Changes</button>
                 </div>
                 
+                <!-- Session 4 Content -->
                 <div id="session4-content" class="content-tab">
-                    <p>Session 4 content editing will be implemented here...</p>
+                    <div class="form-group">
+                        <label>Section Heading</label>
+                        <input type="text" id="edit-session4-heading" placeholder="Section heading">
+                    </div>
+                    
+                    <h4>Column 1</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session4-col1-heading" placeholder="Column 1 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session4-col1-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <h4>Column 2</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session4-col2-heading" placeholder="Column 2 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session4-col2-content" class="tinymce-editor"></textarea>
+                    </div>
+
+                    <h4>Column 3 (New Column)</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session4-col3-heading" placeholder="Column 3 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session4-col3-content" class="tinymce-editor"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Enable Read More</label>
+                        <input type="checkbox" id="edit-session4-col3-readmore">
+                    </div>
+                    
+                    <button onclick="saveSessionContent('session4')" class="btn btn-success">Save Changes</button>
                 </div>
-                
+
+                <!-- Session 5 Content -->
                 <div id="session5-content" class="content-tab">
-                    <p>Session 5 content editing will be implemented here...</p>
+                    <div class="form-group">
+                        <label>Section Heading</label>
+                        <input type="text" id="edit-session5-heading" placeholder="Section heading">
+                    </div>
+                    
+                    <h4>Column 1</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session5-col1-heading" placeholder="Column 1 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session5-col1-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <h4>Column 2</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session5-col2-heading" placeholder="Column 2 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session5-col2-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <h4>Column 3</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session5-col3-heading" placeholder="Column 3 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session5-col3-content" class="tinymce-editor"></textarea>
+                    </div>
+
+                    <h4>Column 4</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session5-col4-heading" placeholder="Column 4 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session5-col4-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <button onclick="saveSessionContent('session5')" class="btn btn-success">Save Changes</button>
+                </div>
+
+                <!-- Session 6 Content (Photo Gallery) -->
+                <div id="session6-content" class="content-tab">
+                    <div class="form-group">
+                        <label>Gallery Heading</label>
+                        <input type="text" id="edit-session6-heading" placeholder="Photo Gallery Heading">
+                    </div>
+                    <h4>Add Images to Gallery</h4>
+                    <div class="form-group">
+                        <label>Image URL</label>
+                        <input type="url" id="session6-image-url" placeholder="Enter image URL">
+                    </div>
+                    <button onclick="addGalleryItem('session6')" class="btn btn-primary">Add Image</button>
+                    <div id="session6-gallery-list" class="gallery-item-list">
+                        <!-- Gallery items will be listed here -->
+                    </div>
+                    <button onclick="saveSessionContent('session6')" class="btn btn-success">Save Changes</button>
+                </div>
+
+                <!-- Session 7 Content (Video Gallery) -->
+                <div id="session7-content" class="content-tab">
+                    <div class="form-group">
+                        <label>Gallery Heading</label>
+                        <input type="text" id="edit-session7-heading" placeholder="Video Gallery Heading">
+                    </div>
+                    <h4>Add Videos to Gallery</h4>
+                    <div class="form-group">
+                        <label>Video URL (YouTube/Vimeo)</label>
+                        <input type="url" id="session7-video-url" placeholder="Enter video URL">
+                    </div>
+                    <button onclick="addGalleryItem('session7')" class="btn btn-primary">Add Video</button>
+                    <div id="session7-gallery-list" class="gallery-item-list">
+                        <!-- Gallery items will be listed here -->
+                    </div>
+                    <button onclick="saveSessionContent('session7')" class="btn btn-success">Save Changes</button>
                 </div>
             </section>
 
