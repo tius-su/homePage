@@ -1,412 +1,592 @@
-// Main Website JavaScript
-let websiteData = {};
-let websiteSettings = {};
-let auth, db, storage; // Declare Firebase variables for this script's scope
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi Firebase dan setup listener
-    initializeFirebaseAndLoadData();
-    setupEventListeners();
-});
-
-// Inisialisasi Firebase dan setup listener Firestore
-function initializeFirebaseAndLoadData() {
-    // Firebase config tersedia secara global dari firebase-config.js
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    if (firebaseConfig) {
-        // Inisialisasi Firebase App
-        const app = firebase.initializeApp(firebaseConfig);
-        auth = app.auth();
-        db = app.firestore();
-        storage = app.storage();
-
-        // Sign in secara anonim atau dengan token kustom
-        auth.onAuthStateChanged(async (user) => {
-            if (!user) {
-                try {
-                    if (initialAuthToken) {
-                        await auth.signInWithCustomToken(initialAuthToken);
-                        console.log("Signed in with custom token.");
-                    } else {
-                        await auth.signInAnonymously();
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial sign-in:", error);
-                    // Fallback jika token kustom gagal
-                    await auth.signInAnonymously();
-                    console.log("Signed in anonymously after token error.");
-                }
-            }
-            // Setelah status auth dikonfirmasi, setup listener Firestore
-            console.log("Firebase Auth state confirmed. Setting up Firestore listeners.");
-            setupFirestoreListeners();
-        });
-    } else {
-        console.warn("Firebase config not found. Using mock Firebase services (if available).");
-        // Jika tidak ada firebaseConfig, asumsikan layanan mock sudah diatur secara global
-        auth = window.auth; 
-        db = window.db;
-        storage = window.storage;
-        console.log("Using mock Firebase. Setting up Firestore listeners.");
-        setupFirestoreListeners(); // Tetap coba memuat data dengan layanan mock
-    }
+/* Admin Panel Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-// Setup Firestore real-time listeners
-function setupFirestoreListeners() {
-    console.log("setupFirestoreListeners called.");
-    if (!db) {
-        console.error("Firestore DB object is not initialized. Cannot set up listeners.");
-        return;
-    }
-
-    // Dengarkan perubahan pengaturan situs web
-    db.collection('website').doc('settings').onSnapshot(doc => {
-        if (doc.exists) {
-            websiteSettings = doc.data();
-            console.log("Firestore: Settings updated.", websiteSettings);
-            applyWebsiteSettings(websiteSettings);
-        } else {
-            console.log("Firestore: No website settings found. Applying default settings.");
-            applyWebsiteSettings({}); 
-        }
-    }, error => {
-        console.error("Error listening to settings:", error);
-    });
-
-    // Dengarkan perubahan konten situs web
-    db.collection('website').doc('content').onSnapshot(doc => {
-        if (doc.exists) {
-            websiteData = doc.data();
-            console.log("Firestore: Content updated.", websiteData);
-            applyWebsiteContent(websiteData);
-        } else {
-            console.log("Firestore: No website content found. Applying default content.");
-            applyWebsiteContent({});
-        }
-    }, error => {
-        console.error("Error listening to content:", error);
-    });
-
-    // Dengarkan penugasan gambar
-    db.collection('website').doc('images').onSnapshot(doc => {
-        if (doc.exists) {
-            const images = doc.data();
-            console.log("Firestore: Image assignments updated.", images);
-            applyImageAssignments(images);
-        } else {
-            console.log("Firestore: No image assignments found. Applying default images.");
-            applyImageAssignments({});
-        }
-    }, error => {
-        console.error("Error listening to images:", error);
-    });
-
-    // Dengarkan perubahan item menu
-    db.collection('website').doc('menu').onSnapshot(doc => {
-        if (doc.exists) {
-            const menuItems = doc.data().items || [];
-            console.log("Firestore: Menu items updated.", menuItems);
-            updateMenu(menuItems);
-        } else {
-            console.log("Firestore: No menu items found. Applying default menu.");
-            updateMenu([]);
-        }
-    }, error => {
-        console.error("Error listening to menu:", error);
-    });
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
 }
 
-// Setup event listeners untuk interaksi UI (misalnya, menu mobile)
-function setupEventListeners() {
-    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-    const mobileNav = document.getElementById('mobile-nav');
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 280px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 2rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.logout-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 1rem 0;
+}
+
+.sidebar-nav li {
+    margin-bottom: 0.5rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.nav-link i {
+    margin-right: 0.75rem;
+    width: 20px;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 2rem;
+    background-color: #f8f9fa;
+}
+
+.admin-section {
+    display: none;
+    background: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.admin-section.active {
+    display: block;
+}
+
+.section-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.section-header h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.section-header p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    border-left: 4px solid #3498db;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.card-icon {
+    font-size: 3rem;
+    color: #3498db;
+    margin-bottom: 1rem;
+}
+
+.card-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.card-content p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+/* Settings Grid */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.settings-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.settings-card h3, .settings-card h4, .settings-card h5 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+.settings-card h5 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px dashed #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-group input[type="color"] {
+    height: 50px;
+    padding: 0.25rem;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+/* Button Styles */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9, #1f5f8b);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #27ae60, #229954);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #229954, #1e8449);
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: translateY(-2px);
+}
+
+/* Tab Styles */
+.content-tabs,
+.media-tabs,
+.code-tabs {
+    display: flex;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e9ecef;
+    overflow-x: auto; /* Allow horizontal scrolling for many tabs */
+    white-space: nowrap; /* Prevent tabs from wrapping */
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #6c757d;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Prevent tabs from shrinking */
+}
+
+.tab-btn.active,
+.tab-btn:hover {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.content-tab,
+.media-tab,
+.code-tab {
+    display: none;
+}
+
+.content-tab.active,
+.media-tab.active,
+.code-tab.active {
+    display: block;
+}
+
+/* Media Manager */
+.upload-area {
+    margin-bottom: 3rem;
+}
+
+.upload-drop-zone {
+    border: 2px dashed #ced4da;
+    border-radius: 10px;
+    padding: 3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.upload-drop-zone:hover {
+    border-color: #3498db;
+    background-color: #f8f9fa;
+}
+
+.upload-drop-zone i {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.assignment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.assignment-item {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.assignment-item label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.image-preview {
+    width: 100%;
+    max-width: 200px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-top: 1rem;
+    border: 1px solid #dee2e6;
+}
+
+/* Gallery Item List */
+.gallery-item-list {
+    margin-top: 1.5rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: #fcfcfc;
+}
+
+.gallery-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.gallery-item:last-child {
+    border-bottom: none;
+}
+
+.gallery-item span {
+    flex-grow: 1;
+    margin-right: 1rem;
+    word-break: break-all; /* Ensure long URLs wrap */
+}
+
+.gallery-item .btn-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+/* Menu Manager */
+.menu-actions {
+    margin-bottom: 2rem;
+}
+
+.menu-list {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.menu-item {
+    background: white;
+    border-radius: 5px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.menu-item-content {
+    flex: 1;
+    word-break: break-all; /* Ensure long URLs wrap */
+}
+
+.menu-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.menu-item-actions button {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+/* Code Editor */
+.code-editor-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+
+.code-tab textarea {
+    width: 100%;
+    height: 400px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    background: #2d3748;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 5px;
+    padding: 1rem;
+    resize: vertical;
+}
+
+.code-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+/* TinyMCE Editor */
+.tinymce-editor {
+    min-height: 200px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-container {
+        flex-direction: column;
+    }
     
-    if (mobileMenuToggle && mobileNav) {
-        mobileMenuToggle.addEventListener('click', () => {
-            mobileNav.classList.toggle('active');
-        });
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
     }
-}
-
-// Terapkan konten situs web ke DOM
-function applyWebsiteContent(data) {
-    // Sesi 1
-    document.getElementById('session1-title1').textContent = data.session1?.title1 || 'Welcome to Our Professional Website';
-    document.getElementById('session1-title2').textContent = data.session1?.title2 || 'Your Success is Our Priority';
-
-    // Sesi 2
-    document.getElementById('session2-heading').textContent = data.session2?.heading || 'Our Services';
-    document.getElementById('session2-col1-heading').textContent = data.session2?.col1Heading || 'Web Development';
-    document.getElementById('session2-col1-content').innerHTML = data.session2?.col1Content || 'Professional web development services with modern technologies and responsive design.';
-    document.getElementById('session2-col2-heading').textContent = data.session2?.col2Heading || 'Digital Marketing';
-    document.getElementById('session2-col2-content').innerHTML = data.session2?.col2Content || 'Comprehensive digital marketing strategies to grow your business online.';
-    document.getElementById('session2-col3-heading').textContent = data.session2?.col3Heading || 'Consulting';
-    document.getElementById('session2-col3-content').innerHTML = data.session2?.col3Content || 'Expert business consulting to help you make informed decisions.';
-
-    // Sesi 3
-    document.getElementById('session3-col1-heading').textContent = data.session3?.col1Heading || 'About Our Company';
-    document.getElementById('session3-col1-content').innerHTML = data.session3?.col1Content || 'We are a leading company in providing innovative solutions for businesses worldwide. Our team of experts is dedicated to delivering exceptional results.';
-    document.getElementById('session3-col2-part1-heading').textContent = data.session3?.col2Part1Heading || 'Our Mission';
-    document.getElementById('session3-col2-part1-content').innerHTML = data.session3?.col2Part1Content || 'To empower businesses with cutting-edge technology and strategic insights.';
-    document.getElementById('session3-col2-part2-heading').textContent = data.session3?.col2Part2Heading || 'Our Vision';
-    document.getElementById('session3-col2-part2-content').innerHTML = data.session3?.col2Part2Content || 'To be the global leader in digital transformation and business innovation.';
-    document.getElementById('session3-col3-heading').textContent = data.session3?.col3Heading || 'Our Values'; // Kolom baru
-    document.getElementById('session3-col3-content').innerHTML = data.session3?.col3Content || 'Integrity, innovation, and customer satisfaction are at the core of everything we do. We believe in building lasting relationships with our clients.'; // Kolom baru
-    applyReadMore('session3-col3-content', data.session3?.col3Readmore); // Terapkan readmore untuk kolom baru
-
-    // Sesi 4
-    document.getElementById('session4-col1-heading').textContent = data.session4?.col1Heading || 'Our Expertise';
-    document.getElementById('session4-col1-content').innerHTML = data.session4?.col1Content || 'With years of experience in the industry, we have developed expertise in various domains including technology, marketing, and business strategy.';
-    document.getElementById('session4-col2-heading').textContent = data.session4?.col2Heading || 'Why Choose Us';
-    document.getElementById('session4-col2-content').innerHTML = data.session4?.col2Content || 'We offer personalized solutions, 24/7 support, and proven results. Our client-centric approach ensures your success is our top priority.';
-    document.getElementById('session4-col3-heading').textContent = data.session4?.col3Heading || 'Our Process'; // Kolom baru
-    document.getElementById('session4-col3-content').innerHTML = data.session4?.col3Content || 'Our streamlined process ensures efficient project delivery from conception to completion, keeping you informed every step of the way.'; // Kolom baru
-    applyReadMore('session4-col3-content', data.session4?.col3Readmore); // Terapkan readmore untuk kolom baru
-
-    // Sesi 5
-    document.getElementById('session5-heading').textContent = data.session5?.heading || 'Our Portfolio';
-    document.getElementById('session5-col1-heading').textContent = data.session5?.col1Heading || 'Project Alpha';
-    document.getElementById('session5-col1-content').innerHTML = data.session5?.col1Content || 'Innovative web application development.';
-    document.getElementById('session5-col2-heading').textContent = data.session5?.col2Heading || 'Project Beta';
-    document.getElementById('session5-col2-content').innerHTML = data.session5?.col2Content || 'Mobile app development and deployment.';
-    document.getElementById('session5-col3-heading').textContent = data.session5?.col3Heading || 'Project Gamma';
-    document.getElementById('session5-col3-content').innerHTML = data.session5?.col3Content || 'E-commerce platform optimization.';
-    document.getElementById('session5-col4-heading').textContent = data.session5?.col4Heading || 'Project Delta';
-    document.getElementById('session5-col4-content').innerHTML = data.session5?.col4Content || 'Digital marketing campaign success.';
-
-    // Sesi 6 (Galeri Foto)
-    document.getElementById('session6-heading').textContent = data.session6?.heading || 'Photo Gallery';
-    renderGallery('photo-gallery-grid', data.session6?.items || [], 'image');
-
-    // Sesi 7 (Galeri Video)
-    document.getElementById('session7-heading').textContent = data.session7?.heading || 'Video Gallery';
-    renderGallery('video-gallery-grid', data.session7?.items || [], 'video');
-}
-
-// Terapkan pengaturan situs web (warna, font, visibilitas, dll.)
-function applyWebsiteSettings(settings) {
-    // Terapkan warna
-    document.documentElement.style.setProperty('--header-bg-color', settings['header-bg-color'] || '#2c3e50');
-    document.documentElement.style.setProperty('--footer-bg-color', settings['footer-bg-color'] || '#2c3e50');
-    document.documentElement.style.setProperty('--session1-bg-color', settings['session1-bg-color'] || '#667eea');
-    document.documentElement.style.setProperty('--session2-bg-color', settings['session2-bg-color'] || '#f8f9fa');
-    document.documentElement.style.setProperty('--session3-bg-color', settings['session3-bg-color'] || '#ffffff');
-    document.documentElement.style.setProperty('--session4-bg-color', settings['session4-bg-color'] || '#f8f9fa');
-    document.documentElement.style.setProperty('--session5-bg-color', settings['session5-bg-color'] || '#ffffff');
-    document.documentElement.style.setProperty('--session6-bg-color', settings['session6-bg-color'] || '#f8f9fa');
-    document.documentElement.style.setProperty('--session7-bg-color', settings['session7-bg-color'] || '#ffffff');
-
-    // Terapkan ukuran font
-    document.documentElement.style.setProperty('--main-title-size', settings['main-title-size'] || '3rem');
-    document.documentElement.style.setProperty('--section-heading-size', settings['section-heading-size'] || '2.5rem');
-    document.documentElement.style.setProperty('--body-font', settings['body-font'] || "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
-
-    // Terapkan animasi dan efek hover
-    const heroImage = document.querySelector('.hero-image');
-    if (heroImage) {
-        heroImage.style.animation = settings['hero-animation'] && settings['hero-animation'] !== 'none' ? `${settings['hero-animation']} 1s ease-out` : 'none';
-    }
-    document.querySelectorAll('.card').forEach(card => {
-        // Hanya terapkan transformasi jika efek tertentu dipilih, jika tidak, reset
-        if (settings['card-hover'] && settings['card-hover'] !== 'none') {
-            card.style.transform = settings['card-hover'];
-        } else {
-            card.style.transform = 'none'; // Reset ke default
-        }
-    });
-
-    // Terapkan tata letak grid untuk Sesi 5
-    updateSession5GridLayout(settings['session5-layout']);
-
-    // Alihkan visibilitas media sosial
-    toggleElementVisibility('#social-icons', settings['show-social']);
-
-    // Alihkan visibilitas sesi 6 dan 7
-    console.log(`Applying visibility for Session 6: ${settings['show-session6']}`);
-    toggleElementVisibility('#session6', settings['show-session6']);
-    console.log(`Applying visibility for Session 7: ${settings['show-session7']}`);
-    toggleElementVisibility('#session7', settings['show-session7']);
-
-    // Terapkan visibilitas kolom untuk Sesi 2-7
-    toggleElementVisibility('#session2-col1', settings['show-session2-col1']);
-    toggleElementVisibility('#session2-col2', settings['show-session2-col2']);
-    toggleElementVisibility('#session2-col3', settings['show-session2-col3']);
-
-    toggleElementVisibility('#session3-col1', settings['show-session3-col1']);
-    toggleElementVisibility('#session3-col2', settings['show-session3-col2']);
-    toggleElementVisibility('#session3-col3', settings['show-session3-col3']);
-
-    toggleElementVisibility('#session4-col1', settings['show-session4-col1']);
-    toggleElementVisibility('#session4-col2', settings['show-session4-col2']);
-    toggleElementVisibility('#session4-col3', settings['show-session4-col3']);
-
-    toggleElementVisibility('#session5-col1', settings['show-session5-col1']);
-    toggleElementVisibility('#session5-col2', settings['show-session5-col2']);
-    toggleElementVisibility('#session5-col3', settings['show-session5-col3']);
-    toggleElementVisibility('#session5-col4', settings['show-session5-col4']);
-}
-
-// Terapkan penugasan gambar
-function applyImageAssignments(images) {
-    Object.keys(images).forEach(elementId => {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.src = images[elementId];
-        }
-    });
-}
-
-// Perbarui item menu
-function updateMenu(items) {
-    const desktopMenu = document.getElementById('menu-items');
-    const mobileMenu = document.getElementById('mobile-menu-items');
     
-    if (desktopMenu) {
-        desktopMenu.innerHTML = '';
-        items.forEach(item => {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = item.url;
-            a.textContent = item.name;
-            li.appendChild(a);
-            desktopMenu.appendChild(li);
-        });
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
     }
-
-    if (mobileMenu) {
-        mobileMenu.innerHTML = '';
-        items.forEach(item => {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = item.url;
-            a.textContent = item.name;
-            li.appendChild(a);
-            mobileMenu.appendChild(li);
-        });
+    
+    .dashboard-grid,
+    .settings-grid {
+        grid-template-columns: 1fr;
     }
-}
-
-// Fungsi generik untuk mengalihkan visibilitas elemen
-function toggleElementVisibility(selector, show) {
-    const element = document.querySelector(selector);
-    if (element) {
-        console.log(`Toggling visibility for ${selector}. Current display: ${element.style.display}. Desired show: ${show}`);
-        element.style.display = show ? '' : 'none'; // Gunakan string kosong untuk kembali ke tampilan default
-        console.log(`New display for ${selector}: ${element.style.display}`);
-    } else {
-        console.warn(`Element with selector ${selector} not found.`);
+    
+    .assignment-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .content-tabs,
+    .media-tabs,
+    .code-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
     }
 }
 
-// Perbarui tata letak grid Sesi 5
-function updateSession5GridLayout(columns) {
-    const session5Grid = document.getElementById('session5-grid');
-    if (session5Grid) {
-        // Hapus kelas kolom yang ada
-        session5Grid.classList.remove('grid-2-cols', 'grid-3-cols', 'grid-4-cols');
-        // Tambahkan kelas kolom baru
-        if (columns === '2') {
-            session5Grid.classList.add('grid-2-cols');
-        } else if (columns === '3') {
-            session5Grid.classList.add('grid-3-cols');
-        } else if (columns === '4') {
-            session5Grid.classList.add('grid-4-cols');
-        }
-    }
+/* Loading and Success States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
 }
 
-// Terapkan fungsionalitas "Read More"
-function applyReadMore(contentId, enableReadMore) {
-    const contentDiv = document.getElementById(contentId);
-    if (!contentDiv) return;
-
-    let readMoreBtn = contentDiv.nextElementSibling;
-    // Buat tombol read more jika belum ada atau bukan tombol yang benar
-    if (!readMoreBtn || !readMoreBtn.classList.contains('read-more-btn')) {
-        readMoreBtn = document.createElement('button');
-        readMoreBtn.className = 'read-more-btn';
-        readMoreBtn.textContent = 'Read More';
-        contentDiv.parentNode.insertBefore(readMoreBtn, contentDiv.nextElementSibling);
-    }
-
-    // Dapatkan konten asli dari websiteData, tangani jalur bersarang
-    let fullContent = '';
-    const parts = contentId.split('-'); // contoh: ['session3', 'col3', 'content']
-    if (parts.length >= 3) {
-        const sessionId = parts[0];
-        const contentKey = parts.slice(1).join('-'); // contoh: 'col3-content'
-        fullContent = websiteData[sessionId]?.[contentKey] || '';
-    } else {
-        fullContent = contentDiv.innerHTML; // Fallback jika format ID tidak terduga
-    }
-
-    if (enableReadMore && fullContent.length > 200) { // Hanya terapkan jika konten panjang dan readmore diaktifkan
-        contentDiv.innerHTML = fullContent.substring(0, 200) + '...'; // Atur konten awal yang diciutkan
-        contentDiv.classList.add('collapsed');
-        readMoreBtn.textContent = 'Read More';
-        readMoreBtn.style.display = 'block';
-        readMoreBtn.onclick = () => {
-            if (contentDiv.classList.contains('collapsed')) {
-                contentDiv.innerHTML = fullContent;
-                contentDiv.classList.remove('collapsed');
-                readMoreBtn.textContent = 'Read Less';
-            } else {
-                contentDiv.innerHTML = fullContent.substring(0, 200) + '...';
-                contentDiv.classList.add('collapsed');
-                readMoreBtn.textContent = 'Read More';
-            }
-        };
-    } else {
-        contentDiv.innerHTML = fullContent; // Tampilkan konten penuh
-        contentDiv.classList.remove('collapsed');
-        readMoreBtn.style.display = 'none'; // Sembunyikan tombol
-    }
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border: 1px solid #c3e6cb;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-
-// Render item galeri di situs web utama
-function renderGallery(containerId, items, type) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    container.innerHTML = ''; // Hapus item yang ada
-
-    items.forEach(item => {
-        const galleryItemDiv = document.createElement('div');
-        galleryItemDiv.className = 'gallery-item';
-
-        if (type === 'image') {
-            const img = document.createElement('img');
-            img.src = item.url;
-            img.alt = 'Gallery Image';
-            galleryItemDiv.appendChild(img);
-        } else if (type === 'video') {
-            // Ekstrak ID video untuk sematan YouTube/Vimeo
-            let embedUrl = item.url;
-            if (item.url.includes('youtube.com/watch?v=')) {
-                const videoId = item.url.split('v=')[1]?.split('&')[0];
-                embedUrl = `https://www.youtube.com/embed/${videoId}`;
-            } else if (item.url.includes('vimeo.com/')) {
-                const videoId = item.url.split('vimeo.com/')[1]?.split('?')[0];
-                embedUrl = `https://player.vimeo.com/video/${videoId}`;
-            }
-
-            const iframe = document.createElement('iframe');
-            iframe.src = embedUrl;
-            iframe.setAttribute('frameborder', '0');
-            iframe.setAttribute('allowfullscreen', '');
-            iframe.setAttribute('loading', 'lazy'); // Optimalkan pemuatan
-            galleryItemDiv.appendChild(iframe);
-        }
-        container.appendChild(galleryItemDiv);
-    });
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border: 1px solid #f5c6cb;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-// Fungsi untuk membuka halaman detail (fungsionalitas yang sudah ada)
-function openDetail(id) {
-    window.location.href = `detail.html?id=${id}`;
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Loading Overlay (Specific for Admin) */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    flex-direction: column;
+}
+
+.loading-spinner {
+    text-align: center;
+    color: #3498db;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.loading-spinner p {
+    font-size: 1.2rem;
+    color: #6c757d;
 }
