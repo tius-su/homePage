@@ -7,27 +7,25 @@ let menuItems = [];
 // Variabel auth, db, storage akan diakses langsung dari objek global 'firebase'
 // Tidak perlu mendeklarasikannya di sini karena SDK compat sudah membuatnya global
 
+// Konfigurasi Cloudinary (Ganti dengan milik Anda)
+const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUDINARY_CLOUD_NAME'; // Ganti ini
+const CLOUDINARY_UPLOAD_PRESET = 'YOUR_CLOUDINARY_UPLOAD_PRESET'; // Ganti ini (unsigned preset)
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("admin-script.js: DOMContentLoaded fired. Showing loading overlay.");
-    // Tampilkan overlay loading segera
     showLoadingOverlay();
-    // Inisialisasi TinyMCE lebih awal, konten akan diatur setelah data dimuat
     initializeTinyMCE(); 
     setupAdminEventListeners();
-    checkAuthentication(); // Ini akan menyembunyikan overlay setelah auth selesai atau gagal
+    checkAuthentication();
 });
 
-// Periksa apakah pengguna diautentikasi
 async function checkAuthentication() {
     console.log("admin-script.js: checkAuthentication called.");
-    // Pastikan objek 'firebase' global tersedia dan diinisialisasi
     if (typeof firebase === 'undefined' || !firebase.apps.length) {
         console.error("admin-script.js: Objek Firebase global tidak ditemukan atau tidak diinisialisasi. Pastikan firebase-config.js dimuat dengan benar.");
-        // Fallback untuk lingkungan di mana Firebase mungkin di-mock
         if (window.auth && window.db && window.storage) {
             console.warn("admin-script.js: Menggunakan layanan mock Firebase.");
-            // Gunakan layanan mock jika tersedia
-            window.auth.onAuthStateChanged(async (user) => { // Gunakan window.auth untuk mock
+            window.auth.onAuthStateChanged(async (user) => {
                 if (user) {
                     currentUser = user;
                     console.log('admin-script.js: Admin logged in (mock):', user.email);
@@ -43,7 +41,7 @@ async function checkAuthentication() {
                     }
                 }
             });
-            return; // Penting: keluar dari fungsi agar tidak melanjutkan ke logika Firebase asli
+            return;
         } else {
             console.error("admin-script.js: Layanan Firebase (mock atau asli) tidak tersedia. Tidak dapat melanjutkan autentikasi.");
             showErrorMessage("Layanan Firebase tidak tersedia. Harap periksa firebase-config.js Anda.");
@@ -52,18 +50,13 @@ async function checkAuthentication() {
             return;
         }
     } else {
-        // Dapatkan instance layanan Firebase dari objek global
-        // Tidak perlu mendeklarasikan 'auth', 'db', 'storage' dengan 'let' atau 'const' di sini
-        // Cukup gunakan firebase.auth(), firebase.firestore(), firebase.storage() secara langsung
         console.log("admin-script.js: Firebase global object found. Proceeding with authentication.");
     }
 
     try {
-        // Gunakan onAuthStateChanged untuk menunggu status autentikasi
-        // Akses auth langsung melalui firebase.auth()
         const user = await new Promise(resolve => {
             const unsubscribe = firebase.auth().onAuthStateChanged(user => {
-                unsubscribe(); // Hentikan mendengarkan setelah panggilan pertama
+                unsubscribe();
                 resolve(user);
             });
         });
@@ -71,9 +64,9 @@ async function checkAuthentication() {
         if (user) {
             currentUser = user;
             console.log('admin-script.js: Admin logged in:', user.email);
-            await loadAdminData(); // Muat data setelah login berhasil
+            await loadAdminData();
             hideLoadingOverlay();
-            showSection('dashboard'); // Tampilkan dashboard setelah semua dimuat
+            showSection('dashboard');
             setActiveNavLink(document.querySelector('.nav-link[data-section="dashboard"]'));
         } else {
             console.log('admin-script.js: Admin not logged in. Redirecting to index.html.');
@@ -90,7 +83,6 @@ async function checkAuthentication() {
     }
 }
 
-// Tampilkan overlay loading
 function showLoadingOverlay() {
     const overlay = document.getElementById('admin-loading-overlay');
     if (overlay) {
@@ -98,7 +90,6 @@ function showLoadingOverlay() {
     }
 }
 
-// Sembunyikan overlay loading
 function hideLoadingOverlay() {
     const overlay = document.getElementById('admin-loading-overlay');
     if (overlay) {
@@ -106,7 +97,6 @@ function hideLoadingOverlay() {
     }
 }
 
-// Setup event listeners
 function setupAdminEventListeners() {
     console.log("admin-script.js: setupAdminEventListeners dipanggil.");
     const navLinks = document.querySelectorAll('.nav-link');
@@ -128,7 +118,6 @@ function setupAdminEventListeners() {
     console.log("admin-script.js: Listener auto-save terpasang.");
 }
 
-// Tampilkan bagian admin tertentu
 function showSection(sectionName) {
     console.log("admin-script.js: showSection dipanggil untuk:", sectionName);
     document.querySelectorAll('.admin-section').forEach(section => {
@@ -144,7 +133,6 @@ function showSection(sectionName) {
     }
 }
 
-// Atur tautan navigasi aktif
 function setActiveNavLink(activeLink) {
     console.log("admin-script.js: setActiveNavLink dipanggil untuk:", activeLink.getAttribute('data-section'));
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -153,7 +141,6 @@ function setActiveNavLink(activeLink) {
     activeLink.classList.add('active');
 }
 
-// Inisialisasi editor TinyMCE
 function initializeTinyMCE() {
     if (tinymce.activeEditor) {
         tinymce.remove('.tinymce-editor');
@@ -192,16 +179,14 @@ function initializeTinyMCE() {
     });
 }
 
-// Muat semua data admin (pengaturan, konten, gambar, menu) dari Firebase
 async function loadAdminData() {
-    // Akses Firestore langsung melalui firebase.firestore()
     if (typeof firebase.firestore === 'undefined') {
         console.error("admin-script.js: Objek Firebase Firestore tidak diinisialisasi. Tidak dapat memuat data admin.");
         return;
     }
 
     try {
-        const db = firebase.firestore(); // Dapatkan instance Firestore
+        const db = firebase.firestore();
         const settingsDoc = await db.collection('website').doc('settings').get();
         if (settingsDoc.exists) {
             websiteSettings = settingsDoc.data();
@@ -223,12 +208,17 @@ async function loadAdminData() {
             console.log("admin-script.js: Admin: Tidak ada konten ditemukan, menggunakan default.");
         }
 
+        // --- Perubahan di sini: Memuat URL gambar dari Firestore ke input URL ---
         const imagesDoc = await db.collection('website').doc('images').get();
         if (imagesDoc.exists) {
             const images = imagesDoc.data();
             console.log("admin-script.js: Admin: Gambar dimuat.", images);
             Object.keys(images).forEach(elementId => {
+                const inputElement = document.getElementById(`${elementId}-url`); // Ambil input URL
                 const preview = document.getElementById(`preview-${elementId}`);
+                if (inputElement) {
+                    inputElement.value = images[elementId]; // Set nilai input URL
+                }
                 if (preview) {
                     preview.src = images[elementId];
                 }
@@ -236,6 +226,7 @@ async function loadAdminData() {
         } else {
             console.log("admin-script.js: Admin: Tidak ada gambar ditemukan.");
         }
+        // --- Akhir perubahan ---
 
         const menuDoc = await db.collection('website').doc('menu').get();
         if (menuDoc.exists) {
@@ -254,7 +245,6 @@ async function loadAdminData() {
     }
 }
 
-// Terapkan pengaturan yang dimuat ke UI panel admin
 function applySettingsToAdminPanel(settings) {
     Object.keys(settings).forEach(key => {
         const element = document.getElementById(key);
@@ -268,73 +258,60 @@ function applySettingsToAdminPanel(settings) {
     });
 }
 
-// Perbarui warna header
 function updateHeaderColor(color) {
     document.documentElement.style.setProperty('--header-bg-color', color);
     saveSettings();
 }
 
-// Perbarui warna footer
 function updateFooterColor(color) {
     document.documentElement.style.setProperty('--footer-bg-color', color);
     saveSettings();
 }
 
-// Perbarui warna sesi
 function updateSessionColor(sessionId, color) {
     document.documentElement.style.setProperty(`--${sessionId}-bg-color`, color);
     saveSettings();
 }
 
-// Perbarui ukuran font
 function updateFontSize(elementId, size) {
     document.documentElement.style.setProperty(`--${elementId}-font-size`, size);
     saveSettings();
 }
 
-// Perbarui ukuran judul bagian
 function updateSectionHeadingSize(size) {
     document.documentElement.style.setProperty('--section-heading-size', size);
     saveSettings();
 }
 
-// Perbarui font body
 function updateBodyFont(font) {
     document.documentElement.style.setProperty('--body-font', font);
     saveSettings();
 }
 
-// Perbarui animasi hero
 function updateHeroAnimation(animation) {
     saveSettings();
 }
 
-// Perbarui efek hover kartu
 function updateCardHover(effect) {
     saveSettings();
 }
 
-// Perbarui tata letak grid untuk Sesi 5
 function updateGridLayout(columns) {
     saveSettings();
 }
 
-// Alihkan visibilitas media sosial
 function toggleSocialMedia(show) {
     saveSettings();
 }
 
-// Alihkan visibilitas bagian (untuk sesi 6 dan 7)
 function toggleSection(sectionId, show) {
     saveSettings();
 }
 
-// Alihkan visibilitas kolom individual
 function toggleColumnVisibility(columnId, show) {
     saveSettings();
 }
 
-// Tampilkan tab konten dan muat datanya
 async function showContentTab(tabId) {
     document.querySelectorAll('.content-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -351,7 +328,6 @@ async function showContentTab(tabId) {
     await loadContentForTab(tabId);
 }
 
-// Muat konten untuk tab tertentu ke TinyMCE dan input lainnya
 async function loadContentForTab(tabId) {
     const sessionId = tabId.replace('-content', '');
     const sessionContent = websiteData[sessionId] || {};
@@ -406,8 +382,7 @@ async function loadContentForTab(tabId) {
     }
 }
 
-// Simpan konten sesi ke objek websiteData dan kemudian ke Firebase
-async function saveSessionContent(sessionId) {
+function saveSessionContent(sessionId) {
     const contentData = {};
     
     switch (sessionId) {
@@ -469,7 +444,7 @@ async function saveSessionContent(sessionId) {
     
     websiteData[sessionId] = contentData;
 
-    if (currentUser && firebase.firestore()) { // Akses Firestore melalui firebase.firestore()
+    if (currentUser && firebase.firestore()) {
         await firebase.firestore().collection('website').doc('content').set({
             [sessionId]: contentData
         }, { merge: true });
@@ -480,7 +455,6 @@ async function saveSessionContent(sessionId) {
     showSuccessMessage('Konten berhasil disimpan!');
 }
 
-// Tambahkan item galeri (URL gambar atau video)
 function addGalleryItem(sessionId) {
     let urlInputId = '';
     let type = '';
@@ -507,7 +481,6 @@ function addGalleryItem(sessionId) {
     }
 }
 
-// Render item galeri di panel admin
 function renderGalleryItems(sessionId, items) {
     const galleryList = document.getElementById(`${sessionId}-gallery-list`);
     galleryList.innerHTML = '';
@@ -522,7 +495,6 @@ function renderGalleryItems(sessionId, items) {
     });
 }
 
-// Hapus item galeri
 function removeGalleryItem(sessionId, index) {
     const confirmRemove = (callback) => {
         const modal = document.createElement('div');
@@ -558,7 +530,6 @@ function removeGalleryItem(sessionId, index) {
     });
 }
 
-// Tampilkan tab media
 function showMediaTab(tabId) {
     document.querySelectorAll('.media-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -572,64 +543,76 @@ function showMediaTab(tabId) {
     event.target.classList.add('active');
 }
 
-// Tangani unggahan gambar
-async function handleImageUpload(files) {
-    if (typeof firebase.storage === 'undefined') {
-        showErrorMessage("Firebase Storage tidak diinisialisasi. Tidak dapat mengunggah gambar.");
+// --- Perubahan di sini: Fungsi unggah Cloudinary ---
+async function handleCloudinaryUpload(files, resourceType = 'image') {
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+        showErrorMessage("Konfigurasi Cloudinary tidak lengkap. Harap masukkan Cloud Name dan Upload Preset.");
         return;
     }
-    const storage = firebase.storage(); // Dapatkan instance Storage
-    for (let file of files) {
+
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
+        formData.append('resource_type', resourceType); // 'image' atau 'video'
+
         try {
-            const storageRef = storage.ref(`images/${Date.now()}_${file.name}`);
-            const snapshot = await storageRef.put(file);
-            const url = await snapshot.ref.getDownloadURL();
-            console.log('Gambar diunggah:', url);
-            showSuccessMessage('Gambar berhasil diunggah! URL: ' + url);
+            showSuccessMessage(`Mengunggah ${file.name} ke Cloudinary...`);
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Unggahan Cloudinary gagal: ${errorData.error.message}`);
+            }
+
+            const data = await response.json();
+            const imageUrl = data.secure_url;
+            console.log('Gambar/Video diunggah ke Cloudinary:', imageUrl);
+            showSuccessMessage(`Berhasil mengunggah ${file.name}! URL: ${imageUrl}`);
+
+            // Opsional: Anda bisa secara otomatis mengisi URL ke input yang relevan di sini
+            // Misalnya, jika ini untuk hero image, Anda bisa melakukan:
+            // document.getElementById('session2-main-image-url').value = imageUrl;
+            // assignImageUrl('session2-main-image', imageUrl);
+
         } catch (error) {
-            console.error('Kesalahan unggah:', error);
-            showErrorMessage('Gagal mengunggah gambar: ' + error.message);
+            console.error('Kesalahan unggah Cloudinary:', error);
+            showErrorMessage('Gagal mengunggah ke Cloudinary: ' + error.message);
         }
     }
 }
+// --- Akhir perubahan ---
 
-// Tetapkan gambar ke elemen
-async function assignImage(input, elementId) {
-    if (typeof firebase.storage === 'undefined') {
-        showErrorMessage("Firebase Storage tidak diinisialisasi. Tidak dapat menetapkan gambar.");
-        return;
+// --- Perubahan di sini: Fungsi untuk menetapkan URL gambar ke elemen dan menyimpannya ---
+function assignImageUrl(elementId, url) {
+    const inputElement = document.getElementById(`${elementId}-url`);
+    const preview = document.getElementById(`preview-${elementId}`);
+
+    if (inputElement) {
+        inputElement.value = url; // Pastikan input diperbarui
     }
-    const storage = firebase.storage(); // Dapatkan instance Storage
-    const db = firebase.firestore(); // Dapatkan instance Firestore
-    const file = input.files[0];
-    if (file) {
-        try {
-            const storageRef = storage.ref(`images/${Date.now()}_${file.name}`);
-            const snapshot = await storageRef.put(file);
-            const url = await snapshot.ref.getDownloadURL();
-            
-            const preview = document.getElementById(`preview-${elementId}`);
-            if (preview) {
-                preview.src = url;
-            }
-            
-            if (currentUser && db) {
-                await db.collection('website').doc('images').set({
-                    [elementId]: url
-                }, { merge: true });
-            } else {
-                console.warn("admin-script.js: Tidak menyimpan penugasan gambar ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
-            }
-            
-            showSuccessMessage('Gambar berhasil ditetapkan!');
-        } catch (error) {
-            console.error('Kesalahan saat menetapkan gambar:', error);
-            showErrorMessage('Gagal menetapkan gambar: ' + error.message);
-        }
+    if (preview) {
+        preview.src = url; // Perbarui pratinjau
+    }
+
+    // Simpan URL ke Firebase Firestore
+    if (currentUser && firebase.firestore()) {
+        firebase.firestore().collection('website').doc('images').set({
+            [elementId]: url
+        }, { merge: true })
+        .then(() => showSuccessMessage(`URL ${elementId} berhasil disimpan!`))
+        .catch(error => showErrorMessage(`Gagal menyimpan URL ${elementId}: ${error.message}`));
+    } else {
+        console.warn("admin-script.js: Tidak menyimpan URL gambar ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
     }
 }
+// --- Akhir perubahan ---
 
-// Sematkan video YouTube
+// Fungsi ini tidak lagi digunakan untuk unggahan, hanya untuk mencatat URL YouTube
 function embedYouTubeVideo() {
     const url = document.getElementById('youtube-url').value;
     if (url) {
@@ -639,28 +622,9 @@ function embedYouTubeVideo() {
     }
 }
 
-// Tangani unggahan video
-async function handleVideoUpload(file) {
-    if (typeof firebase.storage === 'undefined') {
-        showErrorMessage("Firebase Storage tidak diinisialisasi. Tidak dapat mengunggah video.");
-        return;
-    }
-    const storage = firebase.storage(); // Dapatkan instance Storage
-    for (let file of files) {
-        try {
-            const storageRef = storage.ref(`videos/${Date.now()}_${file.name}`);
-            const snapshot = await storageRef.put(file);
-            const url = await snapshot.ref.getDownloadURL();
-            console.log('Video diunggah:', url);
-            showSuccessMessage('Video berhasil diunggah! URL: ' + url);
-        } catch (error) {
-            console.error('Kesalahan unggah video:', error);
-            showErrorMessage('Gagal mengunggah video: ' + error.message);
-        }
-    }
-}
+// Fungsi ini tidak lagi digunakan karena unggahan video ditangani oleh handleCloudinaryUpload
+// async function handleVideoUpload(file) { ... }
 
-// Tampilkan tab kode
 function showCodeTab(tabId) {
     document.querySelectorAll('.code-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -674,13 +638,12 @@ function showCodeTab(tabId) {
     event.target.classList.add('active');
 }
 
-// Simpan kode kustom
 async function saveCustomCode() {
     if (typeof firebase.firestore === 'undefined') {
         showErrorMessage("Firebase Firestore tidak diinisialisasi. Tidak dapat menyimpan kode kustom.");
         return;
     }
-    const db = firebase.firestore(); // Dapatkan instance Firestore
+    const db = firebase.firestore();
     if (!currentUser || !db) {
         showErrorMessage("Harap login untuk menyimpan kode kustom.");
         return;
@@ -704,7 +667,6 @@ async function saveCustomCode() {
     }
 }
 
-// Pratinjau kode kustom
 function previewCustomCode() {
     const htmlCode = document.getElementById('custom-html').value;
     const cssCode = document.getElementById('custom-css').value;
@@ -726,13 +688,12 @@ function previewCustomCode() {
     `);
 }
 
-// Buat halaman kustom
 async function generateCustomPage() {
     if (typeof firebase.firestore === 'undefined') {
         showErrorMessage("Firebase Firestore tidak diinisialisasi. Tidak dapat membuat halaman kustom.");
         return;
     }
-    const db = firebase.firestore(); // Dapatkan instance Firestore
+    const db = firebase.firestore();
     if (!currentUser || !db) {
         showErrorMessage("Harap login untuk membuat halaman kustom.");
         return;
@@ -772,7 +733,6 @@ async function generateCustomPage() {
     }
 }
 
-// Tambahkan item menu
 function addMenuItem() {
     const name = prompt('Masukkan nama item menu:');
     const url = prompt('Masukkan URL item menu:');
@@ -792,7 +752,6 @@ function addMenuItem() {
     }
 }
 
-// Render item menu
 function renderMenuItems() {
     const menuList = document.getElementById('menu-list');
     menuList.innerHTML = '';
@@ -815,7 +774,6 @@ function renderMenuItems() {
     });
 }
 
-// Edit item menu
 function editMenuItem(id) {
     const item = menuItems.find(item => item.id === id);
     if (item) {
@@ -832,7 +790,6 @@ function editMenuItem(id) {
     }
 }
 
-// Hapus item menu
 function deleteMenuItem(id) {
     const confirmDelete = (callback) => {
         const modal = document.createElement('div');
@@ -866,13 +823,12 @@ function deleteMenuItem(id) {
     });
 }
 
-// Simpan item menu ke Firebase
 async function saveMenuItems() {
     if (typeof firebase.firestore === 'undefined') {
         showErrorMessage("Firebase Firestore tidak diinisialisasi. Tidak dapat menyimpan item menu.");
         return;
     }
-    const db = firebase.firestore(); // Dapatkan instance Firestore
+    const db = firebase.firestore();
     if (!currentUser || !db) {
         showErrorMessage("Harap login untuk menyimpan item menu.");
         return;
@@ -886,13 +842,12 @@ async function saveMenuItems() {
     }
 }
 
-// Simpan konten ke Firebase
 async function saveContentToFirebase(sessionId, contentData) {
     if (typeof firebase.firestore === 'undefined') {
         showErrorMessage("Firebase Firestore tidak diinisialisasi. Tidak dapat menyimpan konten.");
         return;
     }
-    const db = firebase.firestore(); // Dapatkan instance Firestore
+    const db = firebase.firestore();
     if (!currentUser || !db) {
         showErrorMessage("Harap login untuk menyimpan konten.");
         return;
@@ -907,13 +862,12 @@ async function saveContentToFirebase(sessionId, contentData) {
     }
 }
 
-// Simpan semua pengaturan dari panel admin ke Firebase
 function saveSettings() {
     if (typeof firebase.firestore === 'undefined') {
         console.warn("Firebase Firestore tidak diinisialisasi. Tidak dapat menyimpan pengaturan.");
         return;
     }
-    const db = firebase.firestore(); // Dapatkan instance Firestore
+    const db = firebase.firestore();
     if (!currentUser || !db) {
         console.warn("admin-script.js: Tidak menyimpan pengaturan ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
         return;
@@ -938,7 +892,6 @@ function saveSettings() {
         'show-social': document.getElementById('show-social')?.checked,
         'show-session6': document.getElementById('show-session6')?.checked,
         'show-session7': document.getElementById('show-session7')?.checked,
-        // Pengaturan visibilitas kolom
         'show-session2-col1': document.getElementById('show-session2-col1')?.checked,
         'show-session2-col2': document.getElementById('show-session2-col2')?.checked,
         'show-session2-col3': document.getElementById('show-session2-col3')?.checked,
@@ -959,7 +912,6 @@ function saveSettings() {
     db.collection('website').doc('settings').set(settings).catch(console.error);
 }
 
-// Fungsionalitas auto-save
 function autoSave() {
     saveSettings();
     if (tinymce.activeEditor) {
@@ -971,7 +923,6 @@ function autoSave() {
     }
 }
 
-// Fungsi debounce
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -984,7 +935,6 @@ function debounce(func, wait) {
     };
 }
 
-// Tampilkan pesan sukses
 function showSuccessMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'success-message';
@@ -997,7 +947,6 @@ function showSuccessMessage(message) {
     }, 3000);
 }
 
-// Tampilkan pesan kesalahan
 function showErrorMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'error-message';
@@ -1010,14 +959,13 @@ function showErrorMessage(message) {
     }, 5000);
 }
 
-// Fungsi logout
 function logout() {
     if (typeof firebase.auth === 'undefined') {
         console.warn("Firebase Auth tidak diinisialisasi. Tidak dapat logout.");
         window.location.href = 'index.html';
         return;
     }
-    const auth = firebase.auth(); // Dapatkan instance Auth
+    const auth = firebase.auth();
     if (auth) {
         auth.signOut().then(() => {
             window.location.href = 'index.html';
