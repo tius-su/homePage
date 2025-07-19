@@ -1,71 +1,74 @@
 // Admin Panel JavaScript
 let currentUser = null;
-let websiteData = {}; // Stores content data
-let websiteSettings = {}; // Stores design and visibility settings
+let websiteData = {}; // Menyimpan data konten
+let websiteSettings = {}; // Menyimpan pengaturan desain dan visibilitas
 let menuItems = [];
 
-// Initialize admin panel
+let auth, db, storage; // Deklarasikan variabel Firebase untuk cakupan skrip ini
+
 document.addEventListener('DOMContentLoaded', function() {
-    initializeAdmin();
+    // Tampilkan overlay loading segera
+    showLoadingOverlay();
+    // Inisialisasi TinyMCE lebih awal, konten akan diatur setelah data dimuat
+    initializeTinyMCE(); 
     setupAdminEventListeners();
-    checkAuthentication();
-    initializeTinyMCE(); // Initialize TinyMCE early
+    checkAuthentication(); // Ini akan menyembunyikan overlay setelah auth selesai
 });
 
-// Check if user is authenticated
+// Periksa apakah pengguna diautentikasi
 function checkAuthentication() {
-    // Check if Firebase is initialized or using mock
-    if (typeof firebase === 'undefined' || !firebase.apps.length) {
-        console.warn("Firebase not initialized. Ensure firebase-config.js is loaded correctly.");
-        // Fallback for StackBlitz or similar environments where Firebase might be mocked
-        if (window.auth) {
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    currentUser = user;
-                    console.log('Admin logged in (mock):', user.email);
-                    loadAdminData();
-                } else {
-                    console.log('Admin not logged in (mock). Redirecting to index.html.');
-                    window.location.href = 'index.html';
-                }
-            });
-        } else {
-            console.error("Mock Firebase 'auth' object not found. Cannot check authentication.");
-            window.location.href = 'index.html'; // Redirect if no auth mechanism
-        }
+    // Tetapkan objek Firebase global ke variabel lokal
+    auth = firebase.auth();
+    db = firebase.firestore();
+    storage = firebase.storage();
+
+    // Pastikan objek auth Firebase tersedia
+    if (!auth) {
+        console.error("Objek Firebase Auth tidak diinisialisasi. Tidak dapat memeriksa autentikasi.");
+        hideLoadingOverlay();
+        window.location.href = 'index.html'; // Alihkan jika Firebase Auth tidak siap
         return;
     }
 
-    // Actual Firebase authentication check
-    const app = firebase.app();
-    auth = firebase.auth(app);
-    db = firebase.firestore(app);
-    storage = firebase.storage(app);
-
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async (user) => {
         if (user) {
             currentUser = user;
             console.log('Admin logged in:', user.email);
-            loadAdminData();
+            await loadAdminData(); // Muat data hanya setelah pengguna dikonfirmasi
+            hideLoadingOverlay();
+            // Pastikan bagian dashboard ditampilkan secara default setelah login
+            showSection('dashboard');
+            setActiveNavLink(document.querySelector('.nav-link[data-section="dashboard"]'));
         } else {
-            // Redirect to login if not authenticated
-            // Only redirect if the current page is admin.html
+            console.log('Admin not logged in. Redirecting to index.html.');
+            hideLoadingOverlay();
+            // Hanya alihkan jika halaman saat ini adalah admin.html
             if (window.location.pathname.includes('admin.html')) {
-                console.log('Admin not logged in. Redirecting to index.html.');
                 window.location.href = 'index.html';
             }
         }
     });
 }
 
-// Initialize admin panel
-function initializeAdmin() {
-    // Initial load of settings will be handled by loadAdminData after auth check
+// Tampilkan overlay loading
+function showLoadingOverlay() {
+    const overlay = document.getElementById('admin-loading-overlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+    }
+}
+
+// Sembunyikan overlay loading
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('admin-loading-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
 }
 
 // Setup event listeners
 function setupAdminEventListeners() {
-    // Sidebar navigation
+    // Navigasi sidebar
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -77,26 +80,24 @@ function setupAdminEventListeners() {
         });
     });
 
-    // Auto-save functionality for form inputs
+    // Fungsionalitas auto-save untuk input formulir
     document.addEventListener('input', debounce(autoSave, 1000));
-    document.addEventListener('change', debounce(autoSave, 1000)); // Crucial for checkboxes and selects
+    document.addEventListener('change', debounce(autoSave, 1000)); // Penting untuk kotak centang dan pilihan
 }
 
-// Show specific admin section
+// Tampilkan bagian admin tertentu
 function showSection(sectionName) {
-    // Hide all sections
     document.querySelectorAll('.admin-section').forEach(section => {
         section.classList.remove('active');
     });
     
-    // Show selected section
     const targetSection = document.getElementById(sectionName + '-section');
     if (targetSection) {
         targetSection.classList.add('active');
     }
 }
 
-// Set active navigation link
+// Atur tautan navigasi aktif
 function setActiveNavLink(activeLink) {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
@@ -104,8 +105,13 @@ function setActiveNavLink(activeLink) {
     activeLink.classList.add('active');
 }
 
-// Initialize TinyMCE editors
+// Inisialisasi editor TinyMCE
 function initializeTinyMCE() {
+    // Hancurkan instance yang ada untuk mencegah masalah inisialisasi ulang
+    if (tinymce.activeEditor) {
+        tinymce.remove('.tinymce-editor');
+    }
+    
     tinymce.init({
         selector: '.tinymce-editor',
         height: 300,
@@ -120,18 +126,18 @@ function initializeTinyMCE() {
                  bullist numlist outdent indent | removeformat | help',
         setup: function(editor) {
             editor.on('change', function() {
-                autoSave(); // Auto-save on editor content change
+                autoSave(); // Auto-save saat konten editor berubah
             });
             editor.on('init', function() {
-                // When editor initializes, try to load its content from websiteData
+                // Saat editor diinisialisasi, coba muat kontennya dari websiteData
                 const editorId = editor.id;
-                const contentKey = editorId.replace('edit-', ''); // e.g., session2-col1-content
+                const contentKey = editorId.replace('edit-', ''); // contoh: session2-col1-content
                 
-                // Determine session and column from ID
+                // Tentukan sesi dan kolom dari ID
                 const parts = contentKey.split('-');
                 if (parts.length >= 3) {
-                    const sessionId = parts[0]; // e.g., session2
-                    const colKey = parts.slice(1).join('-'); // e.g., col1-content
+                    const sessionId = parts[0]; // contoh: session2
+                    const colKey = parts.slice(1).join('-'); // contoh: col1-content
 
                     if (websiteData[sessionId] && websiteData[sessionId][colKey]) {
                         editor.setContent(websiteData[sessionId][colKey]);
@@ -142,28 +148,37 @@ function initializeTinyMCE() {
     });
 }
 
-// Load all admin data (settings, content, images, menu) from Firebase
+// Muat semua data admin (pengaturan, konten, gambar, menu) dari Firebase
 async function loadAdminData() {
+    if (!db) {
+        console.error("Objek Firestore DB tidak diinisialisasi. Tidak dapat memuat data admin.");
+        return;
+    }
+
     try {
-        // Load settings
+        // Muat pengaturan
         const settingsDoc = await db.collection('website').doc('settings').get();
         if (settingsDoc.exists) {
             websiteSettings = settingsDoc.data();
             applySettingsToAdminPanel(websiteSettings);
+        } else {
+            websiteSettings = {}; // Inisialisasi kosong jika tidak ada pengaturan
         }
 
-        // Load content
+        // Muat konten
         const contentDoc = await db.collection('website').doc('content').get();
         if (contentDoc.exists) {
             websiteData = contentDoc.data();
-            // Re-initialize TinyMCE to ensure content is loaded into editors
-            tinymce.activeEditor?.setContent(''); // Clear current editor content first
-            tinymce.remove('.tinymce-editor'); // Destroy existing instances
-            initializeTinyMCE(); // Re-initialize all editors
-            loadContentForTab(document.querySelector('.content-tabs .tab-btn.active')?.id || 'session1-content'); // Load content for active tab
+            // Inisialisasi ulang TinyMCE untuk memastikan konten dimuat ke editor
+            // Ini penting agar TinyMCE mengambil konten setelah websiteData diisi
+            initializeTinyMCE(); 
+            // Muat konten untuk tab yang saat ini aktif setelah TinyMCE siap
+            loadContentForTab(document.querySelector('.content-tabs .tab-btn.active')?.id || 'session1-content');
+        } else {
+            websiteData = {}; // Inisialisasi kosong jika tidak ada konten
         }
 
-        // Load image assignments
+        // Muat penugasan gambar
         const imagesDoc = await db.collection('website').doc('images').get();
         if (imagesDoc.exists) {
             const images = imagesDoc.data();
@@ -175,21 +190,21 @@ async function loadAdminData() {
             });
         }
 
-        // Load menu items
+        // Muat item menu
         const menuDoc = await db.collection('website').doc('menu').get();
         if (menuDoc.exists) {
             menuItems = menuDoc.data().items || [];
             renderMenuItems();
         }
 
-        showSuccessMessage('Admin data loaded successfully!');
+        showSuccessMessage('Data admin berhasil dimuat!');
     } catch (error) {
-        console.error('Error loading admin data:', error);
-        showErrorMessage('Failed to load admin data: ' + error.message);
+        console.error('Kesalahan saat memuat data admin:', error);
+        showErrorMessage('Gagal memuat data admin: ' + error.message);
     }
 }
 
-// Apply loaded settings to the admin panel UI
+// Terapkan pengaturan yang dimuat ke UI panel admin
 function applySettingsToAdminPanel(settings) {
     Object.keys(settings).forEach(key => {
         const element = document.getElementById(key);
@@ -203,74 +218,73 @@ function applySettingsToAdminPanel(settings) {
     });
 }
 
-// Update header color
+// Perbarui warna header
 function updateHeaderColor(color) {
     document.documentElement.style.setProperty('--header-bg-color', color);
     saveSettings();
 }
 
-// Update footer color
+// Perbarui warna footer
 function updateFooterColor(color) {
     document.documentElement.style.setProperty('--footer-bg-color', color);
     saveSettings();
 }
 
-// Update session color
+// Perbarui warna sesi
 function updateSessionColor(sessionId, color) {
     document.documentElement.style.setProperty(`--${sessionId}-bg-color`, color);
     saveSettings();
 }
 
-// Update font size
+// Perbarui ukuran font
 function updateFontSize(elementId, size) {
-    // This directly affects admin panel preview, actual site uses CSS vars
     document.documentElement.style.setProperty(`--${elementId}-font-size`, size);
     saveSettings();
 }
 
-// Update section heading size
+// Perbarui ukuran judul bagian
 function updateSectionHeadingSize(size) {
     document.documentElement.style.setProperty('--section-heading-size', size);
     saveSettings();
 }
 
-// Update body font
+// Perbarui font body
 function updateBodyFont(font) {
     document.documentElement.style.setProperty('--body-font', font);
     saveSettings();
 }
 
-// Update hero animation
+// Perbarui animasi hero
 function updateHeroAnimation(animation) {
     saveSettings();
 }
 
-// Update card hover effect
+// Perbarui efek hover kartu
 function updateCardHover(effect) {
     saveSettings();
 }
 
-// Update grid layout for Session 5
+// Perbarui tata letak grid untuk Sesi 5
 function updateGridLayout(columns) {
     saveSettings();
 }
 
-// Toggle social media visibility
+// Alihkan visibilitas media sosial
 function toggleSocialMedia(show) {
     saveSettings();
 }
 
-// Toggle section visibility (for sessions 6 and 7)
+// Alihkan visibilitas bagian (untuk sesi 6 dan 7)
 function toggleSection(sectionId, show) {
     saveSettings();
 }
 
-// Toggle individual column visibility
+// Alihkan visibilitas kolom individual
 function toggleColumnVisibility(columnId, show) {
-    saveSettings(); // Save the state of the checkbox
+    saveSettings(); // Simpan status kotak centang
 }
 
-// Show content tab and load its data
+// Tampilkan tab konten dan muat datanya
 async function showContentTab(tabId) {
     document.querySelectorAll('.content-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -283,20 +297,21 @@ async function showContentTab(tabId) {
     document.getElementById(tabId).classList.add('active');
     event.target.classList.add('active');
     
+    // Pastikan editor TinyMCE siap dan kemudian muat konten
+    initializeTinyMCE(); // Inisialisasi ulang untuk memastikan semua editor aktif
     await loadContentForTab(tabId);
 }
 
-// Load content for specific tab into TinyMCE and other inputs
+// Muat konten untuk tab tertentu ke TinyMCE dan input lainnya
 async function loadContentForTab(tabId) {
     const sessionId = tabId.replace('-content', '');
     const sessionContent = websiteData[sessionId] || {};
 
-    // Populate form fields based on loaded data
-    // For TinyMCE, use tinymce.get(id)?.setContent()
-    // For input/textarea, use .value
-    // For checkbox, use .checked
+    // Isi bidang formulir berdasarkan data yang dimuat
+    // Untuk TinyMCE, gunakan tinymce.get(id)?.setContent()
+    // Untuk input/textarea, gunakan .value
+    // Untuk kotak centang, gunakan .checked
 
-    // Example for Session 2:
     if (sessionId === 'session1') {
         document.getElementById('edit-session1-title1').value = sessionContent.title1 || '';
         document.getElementById('edit-session1-title2').value = sessionContent.title2 || '';
@@ -347,7 +362,7 @@ async function loadContentForTab(tabId) {
     }
 }
 
-// Save session content to websiteData object and then to Firebase
+// Simpan konten sesi ke objek websiteData dan kemudian ke Firebase
 async function saveSessionContent(sessionId) {
     const contentData = {};
     
@@ -398,26 +413,32 @@ async function saveSessionContent(sessionId) {
             contentData.col4Heading = document.getElementById('edit-session5-col4-heading').value;
             contentData.col4Content = tinymce.get('edit-session5-col4-content')?.getContent() || '';
             break;
-        case 'session6': // Photo Gallery
+        case 'session6': // Galeri Foto
             contentData.heading = document.getElementById('edit-session6-heading').value;
-            contentData.items = websiteData.session6?.items || []; // Use existing items in websiteData
+            contentData.items = websiteData.session6?.items || []; // Gunakan item yang ada di websiteData
             break;
-        case 'session7': // Video Gallery
+        case 'session7': // Galeri Video
             contentData.heading = document.getElementById('edit-session7-heading').value;
-            contentData.items = websiteData.session7?.items || []; // Use existing items in websiteData
+            contentData.items = websiteData.session7?.items || []; // Gunakan item yang ada di websiteData
             break;
     }
     
-    // Update local websiteData object
+    // Perbarui objek websiteData lokal
     websiteData[sessionId] = contentData;
 
-    // Save to Firebase
-    await saveContentToFirebase(sessionId, contentData);
+    // Simpan ke Firebase
+    if (currentUser && db) {
+        await db.collection('website').doc('content').set({
+            [sessionId]: contentData
+        }, { merge: true });
+    } else {
+        console.warn("Tidak menyimpan konten ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
+    }
     
-    showSuccessMessage('Content saved successfully!');
+    showSuccessMessage('Konten berhasil disimpan!');
 }
 
-// Add gallery item (image or video URL)
+// Tambahkan item galeri (URL gambar atau video)
 function addGalleryItem(sessionId) {
     let urlInputId = '';
     let type = '';
@@ -432,19 +453,19 @@ function addGalleryItem(sessionId) {
     const url = document.getElementById(urlInputId).value;
     if (url) {
         if (!websiteData[sessionId]) {
-            websiteData[sessionId] = { items: [] }; // Initialize if not exists
+            websiteData[sessionId] = { items: [] }; // Inisialisasi jika tidak ada
         }
         websiteData[sessionId].items.push({ url: url, type: type });
         renderGalleryItems(sessionId, websiteData[sessionId].items);
-        document.getElementById(urlInputId).value = ''; // Clear input
-        saveSessionContent(sessionId); // Save updated gallery to Firebase
-        showSuccessMessage('Gallery item added!');
+        document.getElementById(urlInputId).value = ''; // Bersihkan input
+        saveSessionContent(sessionId); // Simpan galeri yang diperbarui ke Firebase
+        showSuccessMessage('Item galeri ditambahkan!');
     } else {
-        showErrorMessage('Please enter a valid URL.');
+        showErrorMessage('Harap masukkan URL yang valid.');
     }
 }
 
-// Render gallery items in admin panel
+// Render item galeri di panel admin
 function renderGalleryItems(sessionId, items) {
     const galleryList = document.getElementById(`${sessionId}-gallery-list`);
     galleryList.innerHTML = '';
@@ -459,21 +480,16 @@ function renderGalleryItems(sessionId, items) {
     });
 }
 
-// Remove gallery item
+// Hapus item galeri
 function removeGalleryItem(sessionId, index) {
-    // Using a custom confirmation instead of window.confirm
     const confirmRemove = (callback) => {
         const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;
-            z-index: 10000;
-        `;
+        modal.className = 'loading-overlay'; // Gunakan kembali gaya loading-overlay untuk modal
         modal.innerHTML = `
             <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <p>Are you sure you want to delete this menu item?</p>
-                <button id="confirmYes" style="margin: 10px; padding: 8px 15px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">Yes</button>
-                <button id="confirmNo" style="margin: 10px; padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">No</button>
+                <p>Apakah Anda yakin ingin menghapus item ini?</p>
+                <button id="confirmYes" class="btn btn-success" style="margin: 10px;">Ya</button>
+                <button id="confirmNo" class="btn btn-danger" style="margin: 10px;">Tidak</button>
             </div>
         `;
         document.body.appendChild(modal);
@@ -493,14 +509,14 @@ function removeGalleryItem(sessionId, index) {
             if (websiteData[sessionId] && websiteData[sessionId].items) {
                 websiteData[sessionId].items.splice(index, 1);
                 renderGalleryItems(sessionId, websiteData[sessionId].items);
-                saveSessionContent(sessionId); // Save changes to Firebase
-                showSuccessMessage('Gallery item removed successfully!');
+                saveSessionContent(sessionId); // Simpan perubahan ke Firebase
+                showSuccessMessage('Item galeri berhasil dihapus!');
             }
         }
     });
 }
 
-// Show media tab
+// Tampilkan tab media
 function showMediaTab(tabId) {
     document.querySelectorAll('.media-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -514,89 +530,93 @@ function showMediaTab(tabId) {
     event.target.classList.add('active');
 }
 
-// Handle image upload
+// Tangani unggahan gambar
 async function handleImageUpload(files) {
+    if (!storage) {
+        showErrorMessage("Firebase Storage tidak diinisialisasi. Tidak dapat mengunggah gambar.");
+        return;
+    }
     for (let file of files) {
         try {
-            const url = await uploadImageToFirebase(file);
-            console.log('Image uploaded:', url);
-            showSuccessMessage('Image uploaded successfully!');
+            const storageRef = storage.ref(`images/${Date.now()}_${file.name}`);
+            const snapshot = await storageRef.put(file);
+            const url = await snapshot.ref.getDownloadURL();
+            console.log('Gambar diunggah:', url);
+            showSuccessMessage('Gambar berhasil diunggah! URL: ' + url);
+            // Secara opsional, tampilkan URL di suatu tempat atau tetapkan secara otomatis
         } catch (error) {
-            console.error('Upload error:', error);
-            showErrorMessage('Failed to upload image: ' + error.message);
+            console.error('Kesalahan unggah:', error);
+            showErrorMessage('Gagal mengunggah gambar: ' + error.message);
         }
     }
 }
 
-// Assign image to element
+// Tetapkan gambar ke elemen
 async function assignImage(input, elementId) {
+    if (!storage) {
+        showErrorMessage("Firebase Storage tidak diinisialisasi. Tidak dapat menetapkan gambar.");
+        return;
+    }
     const file = input.files[0];
     if (file) {
         try {
-            const url = await uploadImageToFirebase(file);
+            const storageRef = storage.ref(`images/${Date.now()}_${file.name}`);
+            const snapshot = await storageRef.put(file);
+            const url = await snapshot.ref.getDownloadURL();
             
-            // Update preview in admin panel
+            // Perbarui pratinjau di panel admin
             const preview = document.getElementById(`preview-${elementId}`);
             if (preview) {
                 preview.src = url;
             }
             
-            // Save to Firebase
-            await saveImageAssignment(elementId, url);
+            // Simpan ke Firebase
+            if (currentUser && db) {
+                await db.collection('website').doc('images').set({
+                    [elementId]: url
+                }, { merge: true });
+            } else {
+                console.warn("Tidak menyimpan penugasan gambar ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
+            }
             
-            showSuccessMessage('Image assigned successfully!');
+            showSuccessMessage('Gambar berhasil ditetapkan!');
         } catch (error) {
-            console.error('Error assigning image:', error);
-            showErrorMessage('Failed to assign image: ' + error.message);
+            console.error('Kesalahan saat menetapkan gambar:', error);
+            showErrorMessage('Gagal menetapkan gambar: ' + error.message);
         }
     }
 }
 
-// Upload image to Firebase Storage
-async function uploadImageToFirebase(file) {
-    const storageRef = storage.ref().child(`images/${Date.now()}_${file.name}`);
-    const snapshot = await storageRef.put(file);
-    return await snapshot.ref.getDownloadURL();
-}
-
-// Save image assignment to Firebase
-async function saveImageAssignment(elementId, url) {
-    await db.collection('website').doc('images').set({
-        [elementId]: url
-    }, { merge: true });
-}
-
-// Embed YouTube video
+// Sematkan video YouTube (Fungsi ini terutama memperbarui UI admin, penyematan aktual ditangani oleh script.js melalui data Firebase)
 function embedYouTubeVideo() {
     const url = document.getElementById('youtube-url').value;
     if (url) {
-        // This only sets the URL in the admin panel, actual embedding happens on index.html via Firebase data
-        // For now, we'll just save it to a placeholder in settings or content if needed
-        // For simplicity, this function might just be a UI action without direct Firebase save
-        showSuccessMessage('YouTube video URL noted. Assign it via gallery sections if needed.');
+        showSuccessMessage('URL video YouTube dicatat. Tambahkan ke Sesi 7 (Galeri Video) untuk ditampilkan di situs web.');
+    } else {
+        showErrorMessage('Harap masukkan URL YouTube.');
     }
 }
 
-// Handle video upload
+// Tangani unggahan video
 async function handleVideoUpload(file) {
+    if (!storage) {
+        showErrorMessage("Firebase Storage tidak diinisialisasi. Tidak dapat mengunggah video.");
+        return;
+    }
     try {
-        const url = await uploadVideoToFirebase(file);
-        console.log('Video uploaded:', url);
-        showSuccessMessage('Video uploaded successfully!');
+        const storageRef = storage.ref(`videos/${Date.now()}_${file.name}`);
+        const snapshot = await storageRef.put(file);
+        const url = await snapshot.ref.getDownloadURL();
+        console.log('Video diunggah:', url);
+        showSuccessMessage('Video berhasil diunggah! URL: ' + url);
+        // Secara opsional, tampilkan URL di suatu tempat atau tetapkan secara otomatis
     } catch (error) {
-        console.error('Video upload error:', error);
-        showErrorMessage('Failed to upload video: ' + error.message);
+        console.error('Kesalahan unggah video:', error);
+        showErrorMessage('Gagal mengunggah video: ' + error.message);
     }
 }
 
-// Upload video to Firebase Storage
-async function uploadVideoToFirebase(file) {
-    const storageRef = storage.ref().child(`videos/${Date.now()}_${file.name}`);
-    const snapshot = await storageRef.put(file);
-    return await snapshot.ref.getDownloadURL();
-}
-
-// Show code tab
+// Tampilkan tab kode
 function showCodeTab(tabId) {
     document.querySelectorAll('.code-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -610,8 +630,12 @@ function showCodeTab(tabId) {
     event.target.classList.add('active');
 }
 
-// Save custom code
+// Simpan kode kustom
 async function saveCustomCode() {
+    if (!currentUser || !db) {
+        showErrorMessage("Harap login untuk menyimpan kode kustom.");
+        return;
+    }
     const htmlCode = document.getElementById('custom-html').value;
     const cssCode = document.getElementById('custom-css').value;
     const jsCode = document.getElementById('custom-js').value;
@@ -621,17 +645,17 @@ async function saveCustomCode() {
             html: htmlCode,
             css: cssCode,
             javascript: jsCode,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() // Membutuhkan firebase.firestore agar tersedia
         });
         
-        showSuccessMessage('Custom code saved successfully!');
+        showSuccessMessage('Kode kustom berhasil disimpan!');
     } catch (error) {
-        console.error('Error saving custom code:', error);
-        showErrorMessage('Failed to save custom code: ' + error.message);
+        console.error('Kesalahan saat menyimpan kode kustom:', error);
+        showErrorMessage('Gagal menyimpan kode kustom: ' + error.message);
     }
 }
 
-// Preview custom code
+// Pratinjau kode kustom
 function previewCustomCode() {
     const htmlCode = document.getElementById('custom-html').value;
     const cssCode = document.getElementById('custom-css').value;
@@ -653,8 +677,12 @@ function previewCustomCode() {
     `);
 }
 
-// Generate custom page
+// Buat halaman kustom
 async function generateCustomPage() {
+    if (!currentUser || !db) {
+        showErrorMessage("Harap login untuk membuat halaman kustom.");
+        return;
+    }
     const htmlCode = document.getElementById('custom-html').value;
     const cssCode = document.getElementById('custom-css').value;
     const jsCode = document.getElementById('custom-js').value;
@@ -681,20 +709,20 @@ async function generateCustomPage() {
         });
         
         const pageUrl = `custom.html?id=${pageId}`;
-        showSuccessMessage(`Custom page generated! URL: ${pageUrl}`);
+        showSuccessMessage(`Halaman kustom dibuat! URL: ${pageUrl}`);
         
-        // Open the generated page
+        // Buka halaman yang dibuat
         window.open(pageUrl, '_blank');
     } catch (error) {
-        console.error('Error generating custom page:', error);
-        showErrorMessage('Failed to generate custom page: ' + error.message);
+        console.error('Kesalahan saat membuat halaman kustom:', error);
+        showErrorMessage('Gagal membuat halaman kustom: ' + error.message);
     }
 }
 
-// Add menu item
+// Tambahkan item menu
 function addMenuItem() {
-    const name = prompt('Enter menu item name:');
-    const url = prompt('Enter menu item URL:');
+    const name = prompt('Masukkan nama item menu:');
+    const url = prompt('Masukkan URL item menu:');
     
     if (name && url) {
         const menuItem = {
@@ -707,11 +735,11 @@ function addMenuItem() {
         menuItems.push(menuItem);
         saveMenuItems();
         renderMenuItems();
-        showSuccessMessage('Menu item added successfully!');
+        showSuccessMessage('Item menu berhasil ditambahkan!');
     }
 }
 
-// Render menu items
+// Render item menu
 function renderMenuItems() {
     const menuList = document.getElementById('menu-list');
     menuList.innerHTML = '';
@@ -734,38 +762,33 @@ function renderMenuItems() {
     });
 }
 
-// Edit menu item
+// Edit item menu
 function editMenuItem(id) {
     const item = menuItems.find(item => item.id === id);
     if (item) {
-        const newName = prompt('Enter new name:', item.name);
-        const newUrl = prompt('Enter new URL:', item.url);
+        const newName = prompt('Masukkan nama baru:', item.name);
+        const newUrl = prompt('Masukkan URL baru:', item.url);
         
         if (newName && newUrl) {
             item.name = newName;
             item.url = newUrl;
             saveMenuItems();
             renderMenuItems();
-            showSuccessMessage('Menu item updated successfully!');
+            showSuccessMessage('Item menu berhasil diperbarui!');
         }
     }
 }
 
-// Delete menu item
+// Hapus item menu
 function deleteMenuItem(id) {
-    // Using a custom confirmation instead of window.confirm
     const confirmDelete = (callback) => {
         const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;
-            z-index: 10000;
-        `;
+        modal.className = 'loading-overlay'; // Gunakan kembali gaya loading-overlay untuk modal
         modal.innerHTML = `
             <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <p>Are you sure you want to delete this menu item?</p>
-                <button id="confirmYes" style="margin: 10px; padding: 8px 15px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">Yes</button>
-                <button id="confirmNo" style="margin: 10px; padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">No</button>
+                <p>Apakah Anda yakin ingin menghapus item menu ini?</p>
+                <button id="confirmYes" class="btn btn-success" style="margin: 10px;">Ya</button>
+                <button id="confirmNo" class="btn btn-danger" style="margin: 10px;">Tidak</button>
             </div>
         `;
         document.body.appendChild(modal);
@@ -785,36 +808,50 @@ function deleteMenuItem(id) {
             menuItems = menuItems.filter(item => item.id !== id);
             saveMenuItems();
             renderMenuItems();
-            showSuccessMessage('Menu item deleted successfully!');
+            showSuccessMessage('Item menu berhasil dihapus!');
         }
     });
 }
 
-// Save menu items to Firebase
+// Simpan item menu ke Firebase
 async function saveMenuItems() {
+    if (!currentUser || !db) {
+        showErrorMessage("Harap login untuk menyimpan item menu.");
+        return;
+    }
     try {
         await db.collection('website').doc('menu').set({
             items: menuItems
         });
     } catch (error) {
-        console.error('Error saving menu items:', error);
+        console.error('Kesalahan saat menyimpan item menu:', error);
     }
 }
 
-// Save content to Firebase
+// Simpan konten ke Firebase
 async function saveContentToFirebase(sessionId, contentData) {
+    if (!currentUser || !db) {
+        showErrorMessage("Harap login untuk menyimpan konten.");
+        return;
+    }
     try {
         await db.collection('website').doc('content').set({
             [sessionId]: contentData
         }, { merge: true });
     } catch (error) {
-        console.error('Error saving content to Firebase:', error);
+        console.error('Kesalahan saat menyimpan konten ke Firebase:', error);
         throw error;
     }
 }
 
-// Save all settings from the admin panel to Firebase
+// Simpan semua pengaturan dari panel admin ke Firebase
 function saveSettings() {
+    if (!currentUser || !db) {
+        // Jangan tampilkan pesan kesalahan untuk auto-save jika tidak login, cukup log
+        console.warn("Tidak menyimpan pengaturan ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
+        return;
+    }
+
     const settings = {
         'header-bg-color': document.getElementById('header-bg-color')?.value,
         'footer-bg-color': document.getElementById('footer-bg-color')?.value,
@@ -834,7 +871,7 @@ function saveSettings() {
         'show-social': document.getElementById('show-social')?.checked,
         'show-session6': document.getElementById('show-session6')?.checked,
         'show-session7': document.getElementById('show-session7')?.checked,
-        // Column visibility settings
+        // Pengaturan visibilitas kolom
         'show-session2-col1': document.getElementById('show-session2-col1')?.checked,
         'show-session2-col2': document.getElementById('show-session2-col2')?.checked,
         'show-session2-col3': document.getElementById('show-session2-col3')?.checked,
@@ -850,19 +887,17 @@ function saveSettings() {
         'show-session5-col4': document.getElementById('show-session5-col4')?.checked,
     };
     
-    // Update local websiteSettings object
+    // Perbarui objek websiteSettings lokal
     websiteSettings = settings;
 
-    // Save to Firebase
-    if (currentUser) {
-        db.collection('website').doc('settings').set(settings).catch(console.error);
-    }
+    // Simpan ke Firebase
+    db.collection('website').doc('settings').set(settings).catch(console.error);
 }
 
-// Auto-save functionality
+// Fungsionalitas auto-save
 function autoSave() {
     saveSettings();
-    // Also save content if any TinyMCE editor is active
+    // Juga simpan konten jika ada editor TinyMCE yang aktif
     if (tinymce.activeEditor) {
         const activeTabButton = document.querySelector('.content-tabs .tab-btn.active');
         if (activeTabButton) {
@@ -872,7 +907,7 @@ function autoSave() {
     }
 }
 
-// Debounce function
+// Fungsi debounce
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -885,7 +920,7 @@ function debounce(func, wait) {
     };
 }
 
-// Show success message
+// Tampilkan pesan sukses
 function showSuccessMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'success-message';
@@ -898,7 +933,7 @@ function showSuccessMessage(message) {
     }, 3000);
 }
 
-// Show error message
+// Tampilkan pesan kesalahan
 function showErrorMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'error-message';
@@ -911,12 +946,17 @@ function showErrorMessage(message) {
     }, 5000);
 }
 
-// Logout function
+// Fungsi logout
 function logout() {
-    auth.signOut().then(() => {
+    if (auth) {
+        auth.signOut().then(() => {
+            window.location.href = 'index.html';
+        }).catch(error => {
+            console.error('Kesalahan saat logout:', error);
+            showErrorMessage('Gagal logout: ' + error.message);
+        });
+    } else {
+        console.warn("Firebase Auth tidak tersedia untuk logout.");
         window.location.href = 'index.html';
-    }).catch(error => {
-        console.error('Error logging out:', error);
-        showErrorMessage('Failed to log out: ' + error.message);
-    });
+    }
 }
