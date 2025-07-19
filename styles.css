@@ -384,7 +384,10 @@ main {
 }
 
 .gallery-grid {
+    display: grid; /* Ensure grid display */
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
 }
 
 .gallery-item {
@@ -394,7 +397,7 @@ main {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.gallery-item img, .gallery-item video {
+.gallery-item img, .gallery-item video, .gallery-item iframe { /* Added iframe for videos */
     width: 100%;
     height: 200px;
     object-fit: cover;
