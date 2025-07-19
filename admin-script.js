@@ -169,7 +169,7 @@ function initializeTinyMCE() {
             'insertdatetime media table paste code help wordcount'
         ],
         toolbar: 'undo redo | formatselect | bold italic backcolor | \
-                 alignleft aligncenter alignalignjustify | \
+                 alignleft aligncenter alignright alignjustify | \
                  bullist numlist outdent indent | removeformat | help',
         readonly: false, 
         setup: function(editor) {
@@ -1026,7 +1026,7 @@ function logout() {
             showErrorMessage('Gagal logout: ' + error.message);
         });
     } else {
-        console.warn("admin-script.js: Firebase Auth tidak tersedia untuk logout.");
+        console.warn("Firebase Auth tidak tersedia untuk logout.");
         window.location.href = 'index.html';
     }
 }
