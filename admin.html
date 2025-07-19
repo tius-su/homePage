@@ -6,7 +6,8 @@
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="admin-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.tiny.cloud/1/ts9awx61mtfosvw8yndekregjzlxd6098qnrnbajxgymusfi/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- TinyMCE Script (Ganti YOUR_TINYMCE_API_KEY_HERE dengan kunci API Anda yang sebenarnya) -->
+    <script src="https://cdn.tiny.cloud/1/YOUR_TINYMCE_API_KEY_HERE/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -568,31 +569,78 @@
                 <!-- Images Tab -->
                 <div id="images-tab" class="media-tab active">
                     <div class="upload-area">
-                        <h3>Upload Images</h3>
-                        <input type="file" id="image-upload" accept="image/*" multiple onchange="handleImageUpload(this.files)">
-                        <div class="upload-drop-zone" onclick="document.getElementById('image-upload').click()">
+                        <h3>Upload Images to Cloudinary</h3>
+                        <!-- Input file untuk unggah langsung ke Cloudinary -->
+                        <input type="file" id="cloudinary-image-upload" accept="image/*" multiple onchange="handleCloudinaryUpload(this.files)">
+                        <div class="upload-drop-zone" onclick="document.getElementById('cloudinary-image-upload').click()">
                             <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Click to upload images or drag and drop</p>
+                            <p>Klik untuk mengunggah gambar atau seret & lepas</p>
+                            <p class="text-sm text-gray-500">Unggah langsung ke Cloudinary</p>
                         </div>
                     </div>
                     
                     <div class="image-assignments">
-                        <h3>Assign Images to Elements</h3>
+                        <h3>Tetapkan Gambar ke Elemen</h3>
                         <div class="assignment-grid">
                             <div class="assignment-item">
-                                <label>Header Logo</label>
-                                <input type="file" accept="image/*" onchange="assignImage(this, 'header-logo')">
+                                <label>Header Logo URL</label>
+                                <input type="url" id="header-logo-url" placeholder="URL Gambar Header" onchange="assignImageUrl('header-logo', this.value)">
                                 <img id="preview-header-logo" class="image-preview" src="">
                             </div>
                             <div class="assignment-item">
-                                <label>Footer Logo</label>
-                                <input type="file" accept="image/*" onchange="assignImage(this, 'footer-logo')">
+                                <label>Footer Logo URL</label>
+                                <input type="url" id="footer-logo-url" placeholder="URL Gambar Footer" onchange="assignImageUrl('footer-logo', this.value)">
                                 <img id="preview-footer-logo" class="image-preview" src="">
                             </div>
                             <div class="assignment-item">
-                                <label>Hero Image</label>
-                                <input type="file" accept="image/*" onchange="assignImage(this, 'session2-main-image')">
+                                <label>Hero Image URL</label>
+                                <input type="url" id="session2-main-image-url" placeholder="URL Gambar Hero" onchange="assignImageUrl('session2-main-image', this.value)">
                                 <img id="preview-session2-main-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 2 Kolom 1 Gambar URL</label>
+                                <input type="url" id="session2-col1-image-url" placeholder="URL Gambar Kolom 1" onchange="assignImageUrl('session2-col1-image', this.value)">
+                                <img id="preview-session2-col1-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 2 Kolom 2 Gambar URL</label>
+                                <input type="url" id="session2-col2-image-url" placeholder="URL Gambar Kolom 2" onchange="assignImageUrl('session2-col2-image', this.value)">
+                                <img id="preview-session2-col2-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 2 Kolom 3 Gambar URL</label>
+                                <input type="url" id="session2-col3-image-url" placeholder="URL Gambar Kolom 3" onchange="assignImageUrl('session2-col3-image', this.value)">
+                                <img id="preview-session2-col3-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 3 Kolom 1 Gambar URL</label>
+                                <input type="url" id="session3-col1-image-url" placeholder="URL Gambar Kolom 1" onchange="assignImageUrl('session3-col1-image', this.value)">
+                                <img id="preview-session3-col1-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 4 Kolom 1 Gambar URL</label>
+                                <input type="url" id="session4-col1-image-url" placeholder="URL Gambar Kolom 1" onchange="assignImageUrl('session4-col1-image', this.value)">
+                                <img id="preview-session4-col1-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 5 Kolom 1 Gambar URL</label>
+                                <input type="url" id="session5-col1-image-url" placeholder="URL Gambar Kolom 1" onchange="assignImageUrl('session5-col1-image', this.value)">
+                                <img id="preview-session5-col1-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 5 Kolom 2 Gambar URL</label>
+                                <input type="url" id="session5-col2-image-url" placeholder="URL Gambar Kolom 2" onchange="assignImageUrl('session5-col2-image', this.value)">
+                                <img id="preview-session5-col2-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 5 Kolom 3 Gambar URL</label>
+                                <input type="url" id="session5-col3-image-url" placeholder="URL Gambar Kolom 3" onchange="assignImageUrl('session5-col3-image', this.value)">
+                                <img id="preview-session5-col3-image" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Sesi 5 Kolom 4 Gambar URL</label>
+                                <input type="url" id="session5-col4-image-url" placeholder="URL Gambar Kolom 4" onchange="assignImageUrl('session5-col4-image', this.value)">
+                                <img id="preview-session5-col4-image" class="image-preview" src="">
                             </div>
                         </div>
                     </div>
@@ -610,11 +658,12 @@
                     </div>
                     
                     <div class="video-upload">
-                        <h3>Upload Video Files</h3>
-                        <input type="file" id="video-upload" accept="video/*" onchange="handleVideoUpload(this.files[0])">
-                        <div class="upload-drop-zone" onclick="document.getElementById('video-upload').click()">
+                        <h3>Upload Video Files (via Cloudinary)</h3>
+                        <input type="file" id="cloudinary-video-upload" accept="video/*" onchange="handleCloudinaryUpload(this.files[0], 'video')">
+                        <div class="upload-drop-zone" onclick="document.getElementById('cloudinary-video-upload').click()">
                             <i class="fas fa-video"></i>
-                            <p>Click to upload video files</p>
+                            <p>Klik untuk mengunggah file video atau seret & lepas</p>
+                            <p class="text-sm text-gray-500">Unggah langsung ke Cloudinary</p>
                         </div>
                     </div>
                 </div>
@@ -685,7 +734,6 @@
     </div>
 
     <!-- Firebase SDKs -->
-    <!-- Use Firebase compat SDKs for global access -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
