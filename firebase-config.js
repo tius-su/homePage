@@ -9,20 +9,11 @@ const firebaseConfig = {
     appId: "1:238347756112:web:6b33d6772f3568385f2755"
 };
 
-// Inisialisasi Firebase dengan penanganan kesalahan
-// Variabel ini akan tersedia secara global setelah SDK dimuat
-let auth, db, storage;
-
-// Inisialisasi Firebase App
-// Penting: Inisialisasi ini harus terjadi hanya sekali
+// Inisialisasi Firebase App jika belum diinisialisasi
+// Ini akan membuat objek 'firebase' global tersedia
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-
-// Tetapkan layanan Firebase ke variabel global
-auth = firebase.auth();
-db = firebase.firestore();
-storage = firebase.storage();
 
 // Variabel global ini digunakan oleh lingkungan Canvas
 // Jangan ubah ini kecuali Anda tahu apa yang Anda lakukan
