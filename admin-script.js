@@ -20,17 +20,8 @@ function checkAuthentication() {
             console.log('Admin logged in:', user.email);
             loadAdminData();
         } else {
-            // Check for mock user in localStorage
-            const mockUser = localStorage.getItem('mockUser');
-            if (mockUser) {
-                currentUser = JSON.parse(mockUser);
-                console.log('Mock user found:', currentUser.email);
-                loadAdminData();
-            } else {
-                // Show login prompt instead of redirect
-                alert('Please login first from the main website by clicking the admin button (⚙️) in the bottom right corner.');
-                window.location.href = 'index.html';
-            }
+            // Redirect to login if not authenticated
+            window.location.href = 'index.html';
         }
     });
 }
@@ -721,8 +712,7 @@ function saveSettings() {
         'session5-layout': document.getElementById('session5-layout')?.value,
         'show-social': document.getElementById('show-social')?.checked,
         'show-session6': document.getElementById('show-session6')?.checked,
-        'show-session7': document.getElementById('show-session7')?.checked,
-        'show-session3': document.getElementById('show-session3')?.checked
+        'show-session7': document.getElementById('show-session7')?.checked
     };
     
     localStorage.setItem('websiteSettings', JSON.stringify(settings));

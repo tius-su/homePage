@@ -47,12 +47,6 @@ async function handleLogin(e) {
         
         // Show admin features
         showAdminFeatures();
-        
-        // Redirect to admin if requested
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('redirect') === 'admin') {
-            window.location.href = 'admin.html';
-        }
     } catch (error) {
         alert('Login failed: ' + error.message + '\n\nFor demo, use:\nEmail: admin@example.com\nPassword: admin123');
     }
@@ -139,53 +133,16 @@ function showLogin() {
     document.getElementById('login-modal').style.display = 'block';
 }
 
-// Open admin panel
-function openAdmin() {
-    // Check if user is already logged in
-    const mockUser = localStorage.getItem('mockUser');
-    if (mockUser) {
-        // User is logged in, go directly to admin
-        window.location.href = 'admin.html';
-    } else {
-        // User not logged in, show login modal
-        showLogin();
-    }
-}
-
 // Show admin features
 function showAdminFeatures() {
     // Add edit buttons to content areas
     addEditButtons();
-    
-    // Show admin button
-    const adminBtn = document.getElementById('admin-btn');
-    if (adminBtn) {
-        adminBtn.classList.add('show');
-    }
-    
-    // Hide secret trigger
-    const secretTrigger = document.getElementById('secret-admin-trigger');
-    if (secretTrigger) {
-        secretTrigger.style.display = 'none';
-    }
 }
 
 // Hide admin features
 function hideAdminFeatures() {
     // Remove edit buttons
     removeEditButtons();
-    
-    // Hide admin button
-    const adminBtn = document.getElementById('admin-btn');
-    if (adminBtn) {
-        adminBtn.classList.remove('show');
-    }
-    
-    // Show secret trigger
-    const secretTrigger = document.getElementById('secret-admin-trigger');
-    if (secretTrigger) {
-        secretTrigger.style.display = 'block';
-    }
 }
 
 // Add edit buttons to content areas
@@ -311,7 +268,6 @@ function openDetail(slug) {
 function logout() {
     auth.signOut().then(() => {
         localStorage.removeItem('mockUser');
-        hideAdminFeatures();
         window.location.href = 'index.html';
     });
 }
@@ -362,8 +318,7 @@ function animateElement(elementId, animationType) {
 function toggleSection(sectionId) {
     const section = document.getElementById(sectionId);
     if (section) {
-        const isVisible = section.style.display !== 'none';
-        section.style.display = isVisible ? 'none' : 'block';
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
 }
 
