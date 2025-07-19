@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                <button id="logout-btn" class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#dashboard" class="nav-link active" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a></li>
+                    <li><a href="#design" class="nav-link" data-section="design">
+                        <i class="fas fa-palette"></i> Design Settings
+                    </a></li>
+                    <li><a href="#content" class="nav-link" data-section="content">
+                        <i class="fas fa-edit"></i> Content Management
+                    </a></li>
+                    <li><a href="#media" class="nav-link" data-section="media">
+                        <i class="fas fa-images"></i> Media Manager
+                    </a></li>
+                    <li><a href="#menu" class="nav-link" data-section="menu">
+                        <i class="fas fa-bars"></i> Menu Manager
+                    </a></li>
+                    <li><a href="#custom" class="nav-link" data-section="custom">
+                        <i class="fas fa-code"></i> Custom Code
+                    </a></li>
+                    <li><a href="#preview" class="nav-link" onclick="window.open('index.html', '_blank')">
+                        <i class="fas fa-eye"></i> Preview Site
+                    </a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="admin-section active">
+                <div class="section-header">
+                    <h1>Dashboard</h1>
+                    <p>Welcome to your website admin panel</p>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Design Settings</h3>
+                            <p>Customize colors, fonts, and layout</p>
+                            <button onclick="showSection('design')" class="btn btn-primary">Manage</button>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Content Management</h3>
+                            <p>Edit website content and text</p>
+                            <button onclick="showSection('content')" class="btn btn-primary">Manage</button>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Media Manager</h3>
+                            <p>Upload and manage images/videos</p>
+                            <button onclick="showSection('media')" class="btn btn-primary">Manage</button>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Menu Manager</h3>
+                            <p>Add, edit, and organize menu items</p>
+                            <button onclick="showSection('menu')" class="btn btn-primary">Manage</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Design Settings Section -->
+            <section id="design-section" class="admin-section">
+                <div class="section-header">
+                    <h1>Design Settings</h1>
+                    <p>Customize the appearance of your website</p>
+                </div>
+                
+                <div class="settings-grid">
+                    <!-- Color Settings -->
+                    <div class="settings-card">
+                        <h3>Color Settings</h3>
+                        <div class="form-group">
+                            <label>Header Background Color</label>
+                            <input type="color" id="header-bg-color" value="#2c3e50" onchange="updateHeaderColor(this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Footer Background Color</label>
+                            <input type="color" id="footer-bg-color" value="#2c3e50" onchange="updateFooterColor(this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Session 1 Background</label>
+                            <input type="color" id="session1-bg-color" value="#667eea" onchange="updateSessionColor('session1', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>Session 2 Background</label>
+                            <input type="color" id="session2-bg-color" value="#f8f9fa" onchange="updateSessionColor('session2', this.value)">
+                        </div>
+                    </div>
+                    
+                    <!-- Font Settings -->
+                    <div class="settings-card">
+                        <h3>Font Settings</h3>
+                        <div class="form-group">
+                            <label>Main Title Font Size</label>
+                            <select id="main-title-size" onchange="updateFontSize('session1-title1', this.value)">
+                                <option value="2rem">Small</option>
+                                <option value="3rem" selected>Medium</option>
+                                <option value="4rem">Large</option>
+                                <option value="5rem">Extra Large</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Section Heading Font Size</label>
+                            <select id="section-heading-size" onchange="updateSectionHeadingSize(this.value)">
+                                <option value="1.5rem">Small</option>
+                                <option value="2rem">Medium</option>
+                                <option value="2.5rem" selected>Large</option>
+                                <option value="3rem">Extra Large</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Body Font Family</label>
+                            <select id="body-font" onchange="updateBodyFont(this.value)">
+                                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" selected>Segoe UI</option>
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Animation Settings -->
+                    <div class="settings-card">
+                        <h3>Animation Settings</h3>
+                        <div class="form-group">
+                            <label>Hero Image Animation</label>
+                            <select id="hero-animation" onchange="updateHeroAnimation(this.value)">
+                                <option value="zoomIn" selected>Zoom In</option>
+                                <option value="fadeInUp">Fade In Up</option>
+                                <option value="slideInLeft">Slide In Left</option>
+                                <option value="slideInRight">Slide In Right</option>
+                                <option value="none">No Animation</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Card Hover Effect</label>
+                            <select id="card-hover" onchange="updateCardHover(this.value)">
+                                <option value="translateY(-5px)" selected>Lift Up</option>
+                                <option value="scale(1.05)">Scale Up</option>
+                                <option value="rotateY(5deg)">Rotate</option>
+                                <option value="none">No Effect</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Layout Settings -->
+                    <div class="settings-card">
+                        <h3>Layout Settings</h3>
+                        <div class="form-group">
+                            <label>Session 5 Grid Layout</label>
+                            <select id="session5-layout" onchange="updateGridLayout(this.value)">
+                                <option value="2">2 Columns</option>
+                                <option value="3">3 Columns</option>
+                                <option value="4" selected>4 Columns</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Show/Hide Social Media</label>
+                            <input type="checkbox" id="show-social" checked onchange="toggleSocialMedia(this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show/Hide Session 6</label>
+                            <input type="checkbox" id="show-session6" onchange="toggleSection('session6', this.checked)">
+                        </div>
+                        <div class="form-group">
+                            <label>Show/Hide Session 7</label>
+                            <input type="checkbox" id="show-session7" onchange="toggleSection('session7', this.checked)">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Content Management Section -->
+            <section id="content-section" class="admin-section">
+                <div class="section-header">
+                    <h1>Content Management</h1>
+                    <p>Edit website content and text</p>
+                </div>
+                
+                <div class="content-tabs">
+                    <button class="tab-btn active" onclick="showContentTab('session1-content')">Session 1</button>
+                    <button class="tab-btn" onclick="showContentTab('session2-content')">Session 2</button>
+                    <button class="tab-btn" onclick="showContentTab('session3-content')">Session 3</button>
+                    <button class="tab-btn" onclick="showContentTab('session4-content')">Session 4</button>
+                    <button class="tab-btn" onclick="showContentTab('session5-content')">Session 5</button>
+                </div>
+                
+                <!-- Session 1 Content -->
+                <div id="session1-content" class="content-tab active">
+                    <div class="form-group">
+                        <label>Main Title</label>
+                        <input type="text" id="edit-session1-title1" placeholder="Main title">
+                    </div>
+                    <div class="form-group">
+                        <label>Sub Title</label>
+                        <input type="text" id="edit-session1-title2" placeholder="Sub title">
+                    </div>
+                    <button onclick="saveSessionContent('session1')" class="btn btn-success">Save Changes</button>
+                </div>
+                
+                <!-- Session 2 Content -->
+                <div id="session2-content" class="content-tab">
+                    <div class="form-group">
+                        <label>Section Heading</label>
+                        <input type="text" id="edit-session2-heading" placeholder="Section heading">
+                    </div>
+                    
+                    <h4>Column 1</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session2-col1-heading" placeholder="Column 1 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session2-col1-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <h4>Column 2</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session2-col2-heading" placeholder="Column 2 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session2-col2-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <h4>Column 3</h4>
+                    <div class="form-group">
+                        <label>Heading</label>
+                        <input type="text" id="edit-session2-col3-heading" placeholder="Column 3 heading">
+                    </div>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea id="edit-session2-col3-content" class="tinymce-editor"></textarea>
+                    </div>
+                    
+                    <button onclick="saveSessionContent('session2')" class="btn btn-success">Save Changes</button>
+                </div>
+                
+                <!-- Additional content tabs would be similar -->
+                <div id="session3-content" class="content-tab">
+                    <p>Session 3 content editing will be implemented here...</p>
+                </div>
+                
+                <div id="session4-content" class="content-tab">
+                    <p>Session 4 content editing will be implemented here...</p>
+                </div>
+                
+                <div id="session5-content" class="content-tab">
+                    <p>Session 5 content editing will be implemented here...</p>
+                </div>
+            </section>
+
+            <!-- Media Manager Section -->
+            <section id="media-section" class="admin-section">
+                <div class="section-header">
+                    <h1>Media Manager</h1>
+                    <p>Upload and manage images and videos</p>
+                </div>
+                
+                <div class="media-tabs">
+                    <button class="tab-btn active" onclick="showMediaTab('images-tab')">Images</button>
+                    <button class="tab-btn" onclick="showMediaTab('videos-tab')">Videos</button>
+                </div>
+                
+                <!-- Images Tab -->
+                <div id="images-tab" class="media-tab active">
+                    <div class="upload-area">
+                        <h3>Upload Images</h3>
+                        <input type="file" id="image-upload" accept="image/*" multiple onchange="handleImageUpload(this.files)">
+                        <div class="upload-drop-zone" onclick="document.getElementById('image-upload').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Click to upload images or drag and drop</p>
+                        </div>
+                    </div>
+                    
+                    <div class="image-assignments">
+                        <h3>Assign Images to Elements</h3>
+                        <div class="assignment-grid">
+                            <div class="assignment-item">
+                                <label>Header Logo</label>
+                                <input type="file" accept="image/*" onchange="assignImage(this, 'header-logo')">
+                                <img id="preview-header-logo" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Footer Logo</label>
+                                <input type="file" accept="image/*" onchange="assignImage(this, 'footer-logo')">
+                                <img id="preview-footer-logo" class="image-preview" src="">
+                            </div>
+                            <div class="assignment-item">
+                                <label>Hero Image</label>
+                                <input type="file" accept="image/*" onchange="assignImage(this, 'session2-main-image')">
+                                <img id="preview-session2-main-image" class="image-preview" src="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Videos Tab -->
+                <div id="videos-tab" class="media-tab">
+                    <div class="video-upload">
+                        <h3>YouTube Videos</h3>
+                        <div class="form-group">
+                            <label>YouTube URL for Hero Section</label>
+                            <input type="url" id="youtube-url" placeholder="https://www.youtube.com/watch?v=...">
+                            <button onclick="embedYouTubeVideo()" class="btn btn-primary">Embed Video</button>
+                        </div>
+                    </div>
+                    
+                    <div class="video-upload">
+                        <h3>Upload Video Files</h3>
+                        <input type="file" id="video-upload" accept="video/*" onchange="handleVideoUpload(this.files[0])">
+                        <div class="upload-drop-zone" onclick="document.getElementById('video-upload').click()">
+                            <i class="fas fa-video"></i>
+                            <p>Click to upload video files</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Menu Manager Section -->
+            <section id="menu-section" class="admin-section">
+                <div class="section-header">
+                    <h1>Menu Manager</h1>
+                    <p>Add, edit, and organize menu items</p>
+                </div>
+                
+                <div class="menu-manager">
+                    <div class="menu-actions">
+                        <button onclick="addMenuItem()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Menu Item
+                        </button>
+                    </div>
+                    
+                    <div class="menu-list" id="menu-list">
+                        <!-- Menu items will be dynamically loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Custom Code Section -->
+            <section id="custom-section" class="admin-section">
+                <div class="section-header">
+                    <h1>Custom Code</h1>
+                    <p>Add custom HTML, CSS, and JavaScript</p>
+                </div>
+                
+                <div class="code-editor-container">
+                    <div class="code-tabs">
+                        <button class="tab-btn active" onclick="showCodeTab('html-tab')">HTML</button>
+                        <button class="tab-btn" onclick="showCodeTab('css-tab')">CSS</button>
+                        <button class="tab-btn" onclick="showCodeTab('js-tab')">JavaScript</button>
+                    </div>
+                    
+                    <div id="html-tab" class="code-tab active">
+                        <textarea id="custom-html" placeholder="Enter your custom HTML here..."></textarea>
+                    </div>
+                    
+                    <div id="css-tab" class="code-tab">
+                        <textarea id="custom-css" placeholder="Enter your custom CSS here..."></textarea>
+                    </div>
+                    
+                    <div id="js-tab" class="code-tab">
+                        <textarea id="custom-js" placeholder="Enter your custom JavaScript here..."></textarea>
+                    </div>
+                    
+                    <div class="code-actions">
+                        <button onclick="saveCustomCode()" class="btn btn-success">Save Code</button>
+                        <button onclick="previewCustomCode()" class="btn btn-primary">Preview</button>
+                        <button onclick="generateCustomPage()" class="btn btn-warning">Generate Page</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-storage-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin-script.js"></script>
+</body>
+</html>

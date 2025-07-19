@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="detail-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">
+                        <img id="header-logo" src="https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=50&fit=crop" alt="Logo">
+                    </a>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <nav class="desktop-nav" id="desktop-nav">
+                    <ul id="menu-items">
+                        <li><a href="index.html#home">Home</a></li>
+                        <li><a href="index.html#about">About</a></li>
+                        <li><a href="index.html#services">Services</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                    </ul>
+                </nav>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Social Media Icons -->
+                <div class="social-icons" id="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <nav class="mobile-nav" id="mobile-nav">
+            <ul id="mobile-menu-items">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="detail-main">
+        <div class="container">
+            <!-- Breadcrumb -->
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a>
+                <span class="separator">/</span>
+                <span id="breadcrumb-current">Detail</span>
+            </nav>
+
+            <!-- Detail Content -->
+            <article class="detail-article">
+                <header class="article-header">
+                    <h1 id="detail-title">Loading...</h1>
+                    <div class="article-meta">
+                        <span class="date" id="detail-date"></span>
+                        <span class="category" id="detail-category"></span>
+                    </div>
+                </header>
+
+                <div class="article-featured-image">
+                    <img id="detail-image" src="" alt="" style="display: none;">
+                    <div id="detail-video-container" class="video-container" style="display: none;">
+                        <iframe id="detail-video" src="" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+
+                <div class="article-content">
+                    <div id="detail-content" class="content-body">
+                        <p>Loading content...</p>
+                    </div>
+                </div>
+
+                <footer class="article-footer">
+                    <div class="article-tags" id="detail-tags">
+                        <!-- Tags will be loaded dynamically -->
+                    </div>
+                    
+                    <div class="article-share">
+                        <h4>Share this article:</h4>
+                        <div class="share-buttons">
+                            <a href="#" class="share-btn facebook" onclick="shareOnFacebook()">
+                                <i class="fab fa-facebook"></i> Facebook
+                            </a>
+                            <a href="#" class="share-btn twitter" onclick="shareOnTwitter()">
+                                <i class="fab fa-twitter"></i> Twitter
+                            </a>
+                            <a href="#" class="share-btn linkedin" onclick="shareOnLinkedIn()">
+                                <i class="fab fa-linkedin"></i> LinkedIn
+                            </a>
+                            <a href="#" class="share-btn whatsapp" onclick="shareOnWhatsApp()">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </footer>
+            </article>
+
+            <!-- Related Articles -->
+            <section class="related-articles">
+                <h3>Related Articles</h3>
+                <div class="related-grid" id="related-articles">
+                    <!-- Related articles will be loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Comments Section -->
+            <section class="comments-section">
+                <h3>Comments</h3>
+                <div class="comment-form">
+                    <h4>Leave a Comment</h4>
+                    <form id="comment-form">
+                        <div class="form-group">
+                            <input type="text" id="comment-name" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="comment-email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="comment-message" placeholder="Your Comment" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </form>
+                </div>
+                
+                <div class="comments-list" id="comments-list">
+                    <!-- Comments will be loaded dynamically -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer id="footer" class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img id="footer-logo" src="https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=50&fit=crop" alt="Footer Logo">
+                </div>
+                <div class="footer-text">
+                    <p id="footer-text">© 2025 Professional Website. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading content...</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="detail-script.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">
+                        <img id="header-logo" src="https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=50&fit=crop" alt="Logo">
+                    </a>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <nav class="desktop-nav" id="desktop-nav">
+                    <ul id="menu-items">
+                        <li><a href="index.html#home">Home</a></li>
+                        <li><a href="index.html#about">About</a></li>
+                        <li><a href="index.html#services">Services</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                    </ul>
+                </nav>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Social Media Icons -->
+                <div class="social-icons" id="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <nav class="mobile-nav" id="mobile-nav">
+            <ul id="mobile-menu-items">
+                <li><a href="index.html#home">Home</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main id="custom-content" style="margin-top: 80px; min-height: calc(100vh - 200px); padding: 2rem 0;">
+        <div class="container">
+            <div id="loading-message" style="text-align: center; padding: 4rem 0;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #3498db; margin-bottom: 1rem;"></i>
+                <p>Loading custom page...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer id="footer" class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img id="footer-logo" src="https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=50&fit=crop" alt="Footer Logo">
+                </div>
+                <div class="footer-text">
+                    <p id="footer-text">© 2025 Professional Website. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="custom-script.js"></script>
+</body>
+</html>
