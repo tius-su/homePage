@@ -71,7 +71,8 @@ function setupAdminEventListeners() {
     // Navigasi sidebar
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Pastikan ini mencegah perilaku default tautan
+            console.log("Nav link clicked:", link.getAttribute('data-section'));
             const section = link.getAttribute('data-section');
             if (section) {
                 showSection(section);
@@ -87,6 +88,7 @@ function setupAdminEventListeners() {
 
 // Tampilkan bagian admin tertentu
 function showSection(sectionName) {
+    console.log("showSection called for:", sectionName);
     document.querySelectorAll('.admin-section').forEach(section => {
         section.classList.remove('active');
     });
@@ -94,11 +96,15 @@ function showSection(sectionName) {
     const targetSection = document.getElementById(sectionName + '-section');
     if (targetSection) {
         targetSection.classList.add('active');
+        console.log(`Section ${sectionName}-section is now active.`);
+    } else {
+        console.warn(`Section ${sectionName}-section not found.`);
     }
 }
 
 // Atur tautan navigasi aktif
 function setActiveNavLink(activeLink) {
+    console.log("setActiveNavLink called for:", activeLink.getAttribute('data-section'));
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
@@ -161,40 +167,49 @@ async function loadAdminData() {
         if (settingsDoc.exists) {
             websiteSettings = settingsDoc.data();
             applySettingsToAdminPanel(websiteSettings);
+            console.log("Admin: Settings loaded.", websiteSettings);
         } else {
             websiteSettings = {}; // Inisialisasi kosong jika tidak ada pengaturan
+            console.log("Admin: No settings found, using defaults.");
         }
 
         // Muat konten
         const contentDoc = await db.collection('website').doc('content').get();
         if (contentDoc.exists) {
             websiteData = contentDoc.data();
+            console.log("Admin: Content loaded.", websiteData);
             // Inisialisasi ulang TinyMCE untuk memastikan konten dimuat ke editor
-            // Ini penting agar TinyMCE mengambil konten setelah websiteData diisi
             initializeTinyMCE(); 
             // Muat konten untuk tab yang saat ini aktif setelah TinyMCE siap
             loadContentForTab(document.querySelector('.content-tabs .tab-btn.active')?.id || 'session1-content');
         } else {
             websiteData = {}; // Inisialisasi kosong jika tidak ada konten
+            console.log("Admin: No content found, using defaults.");
         }
 
         // Muat penugasan gambar
         const imagesDoc = await db.collection('website').doc('images').get();
         if (imagesDoc.exists) {
             const images = imagesDoc.data();
+            console.log("Admin: Images loaded.", images);
             Object.keys(images).forEach(elementId => {
                 const preview = document.getElementById(`preview-${elementId}`);
                 if (preview) {
                     preview.src = images[elementId];
                 }
             });
+        } else {
+            console.log("Admin: No images found.");
         }
 
         // Muat item menu
         const menuDoc = await db.collection('website').doc('menu').get();
         if (menuDoc.exists) {
             menuItems = menuDoc.data().items || [];
+            console.log("Admin: Menu items loaded.", menuItems);
             renderMenuItems();
+        } else {
+            console.log("Admin: No menu items found.");
         }
 
         showSuccessMessage('Data admin berhasil dimuat!');
@@ -747,7 +762,7 @@ function renderMenuItems() {
     menuItems.forEach(item => {
         const menuItemDiv = document.createElement('div');
         menuItemDiv.className = 'menu-item';
-        menuItemDiv.innerHTML = `
+        itemDiv.innerHTML = `
             <div class="menu-item-content">
                 <strong>${item.name}</strong>
                 <br>
