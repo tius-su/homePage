@@ -237,9 +237,9 @@ async function loadAdminData() {
 
         showSuccessMessage('Data admin berhasil dimuat!');
     } catch (error) {
-        console.error('admin-script.js: Kesalahan saat memuat data admin:', error);
-        showErrorMessage('Gagal memuat data admin: ' + error.message);
-        throw error; 
+            console.error('admin-script.js: Kesalahan saat memuat data admin:', error);
+            showErrorMessage('Gagal memuat data admin: ' + error.message);
+            throw error; 
     }
 }
 
@@ -380,7 +380,7 @@ async function loadContentForTab(tabId) {
     }
 }
 
-function saveSessionContent(sessionId) {
+async function saveSessionContent(sessionId) {
     const contentData = {};
     
     switch (sessionId) {
@@ -541,7 +541,6 @@ function showMediaTab(tabId) {
     event.target.classList.add('active');
 }
 
-// --- Perubahan di sini: Fungsi unggah Cloudinary ---
 async function handleCloudinaryUpload(files, resourceType = 'image') {
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
         showErrorMessage("Konfigurasi Cloudinary tidak lengkap. Harap masukkan Cloud Name dan Upload Preset.");
@@ -553,7 +552,7 @@ async function handleCloudinaryUpload(files, resourceType = 'image') {
         formData.append('file', file);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
         formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
-        formData.append('resource_type', resourceType); // 'image' atau 'video'
+        formData.append('resource_type', resourceType);
 
         try {
             showSuccessMessage(`Mengunggah ${file.name} ke Cloudinary...`);
@@ -572,32 +571,24 @@ async function handleCloudinaryUpload(files, resourceType = 'image') {
             console.log('Gambar/Video diunggah ke Cloudinary:', imageUrl);
             showSuccessMessage(`Berhasil mengunggah ${file.name}! URL: ${imageUrl}`);
 
-            // Opsional: Anda bisa secara otomatis mengisi URL ke input yang relevan di sini
-            // Misalnya, jika ini untuk hero image, Anda bisa melakukan:
-            // document.getElementById('session2-main-image-url').value = imageUrl;
-            // assignImageUrl('session2-main-image', imageUrl);
-
         } catch (error) {
             console.error('Kesalahan unggah Cloudinary:', error);
             showErrorMessage('Gagal mengunggah ke Cloudinary: ' + error.message);
         }
     }
 }
-// --- Akhir perubahan ---
 
-// --- Perubahan di sini: Fungsi untuk menetapkan URL gambar ke elemen dan menyimpannya ---
 function assignImageUrl(elementId, url) {
     const inputElement = document.getElementById(`${elementId}-url`);
     const preview = document.getElementById(`preview-${elementId}`);
 
     if (inputElement) {
-        inputElement.value = url; // Pastikan input diperbarui
+        inputElement.value = url;
     }
     if (preview) {
-        preview.src = url; // Perbarui pratinjau
+        preview.src = url;
     }
 
-    // Simpan URL ke Firebase Firestore
     if (currentUser && firebase.firestore()) {
         firebase.firestore().collection('website').doc('images').set({
             [elementId]: url
@@ -608,9 +599,7 @@ function assignImageUrl(elementId, url) {
         console.warn("admin-script.js: Tidak menyimpan URL gambar ke Firebase: Pengguna tidak login atau DB tidak diinisialisasi.");
     }
 }
-// --- Akhir perubahan ---
 
-// Fungsi ini tidak lagi digunakan untuk unggahan, hanya untuk mencatat URL YouTube
 function embedYouTubeVideo() {
     const url = document.getElementById('youtube-url').value;
     if (url) {
@@ -619,9 +608,6 @@ function embedYouTubeVideo() {
         showErrorMessage('Harap masukkan URL YouTube.');
     }
 }
-
-// Fungsi ini tidak lagi digunakan karena unggahan video ditangani oleh handleCloudinaryUpload
-// async function handleVideoUpload(file) { ... }
 
 function showCodeTab(tabId) {
     document.querySelectorAll('.code-tab').forEach(tab => {
@@ -731,7 +717,7 @@ async function generateCustomPage() {
     }
 }
 
-function addMenuItem() {
+async function addMenuItem() { // Menandai sebagai async karena saveMenuItems adalah async
     const name = prompt('Masukkan nama item menu:');
     const url = prompt('Masukkan URL item menu:');
     
@@ -744,7 +730,7 @@ function addMenuItem() {
         };
         
         menuItems.push(menuItem);
-        saveMenuItems();
+        await saveMenuItems(); // Menggunakan await
         renderMenuItems();
         showSuccessMessage('Item menu berhasil ditambahkan!');
     }
@@ -772,7 +758,7 @@ function renderMenuItems() {
     });
 }
 
-function editMenuItem(id) {
+async function editMenuItem(id) { // Menandai sebagai async
     const item = menuItems.find(item => item.id === id);
     if (item) {
         const newName = prompt('Masukkan nama baru:', item.name);
@@ -781,14 +767,14 @@ function editMenuItem(id) {
         if (newName && newUrl) {
             item.name = newName;
             item.url = newUrl;
-            saveMenuItems();
+            await saveMenuItems(); // Menggunakan await
             renderMenuItems();
             showSuccessMessage('Item menu berhasil diperbarui!');
         }
     }
 }
 
-function deleteMenuItem(id) {
+async function deleteMenuItem(id) { // Menandai sebagai async
     const confirmDelete = (callback) => {
         const modal = document.createElement('div');
         modal.className = 'loading-overlay';
@@ -811,17 +797,17 @@ function deleteMenuItem(id) {
         };
     };
 
-    confirmDelete((result) => {
+    confirmDelete(async (result) => { // Callback juga harus async jika menggunakan await
         if (result) {
             menuItems = menuItems.filter(item => item.id !== id);
-            saveMenuItems();
+            await saveMenuItems(); // Menggunakan await
             renderMenuItems();
             showSuccessMessage('Item menu berhasil dihapus!');
         }
     });
 }
 
-async function saveMenuItems() {
+async function saveMenuItems() { // Menandai sebagai async
     if (typeof firebase.firestore === 'undefined') {
         showErrorMessage("Firebase Firestore tidak diinisialisasi. Tidak dapat menyimpan item menu.");
         return;
@@ -840,7 +826,7 @@ async function saveMenuItems() {
     }
 }
 
-async function saveContentToFirebase(sessionId, contentData) {
+async function saveContentToFirebase(sessionId, contentData) { // Menandai sebagai async
     if (typeof firebase.firestore === 'undefined') {
         showErrorMessage("Firebase Firestore tidak diinisialisasi. Tidak dapat menyimpan konten.");
         return;
@@ -972,7 +958,7 @@ function logout() {
             showErrorMessage('Gagal logout: ' + error.message);
         });
     } else {
-        console.warn("Firebase Auth tidak tersedia untuk logout.");
+        console.warn("admin-script.js: Firebase Auth tidak tersedia untuk logout.");
         window.location.href = 'index.html';
     }
 }
