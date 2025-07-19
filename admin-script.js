@@ -208,16 +208,15 @@ async function loadAdminData() {
             console.log("admin-script.js: Admin: Tidak ada konten ditemukan, menggunakan default.");
         }
 
-        // --- Perubahan di sini: Memuat URL gambar dari Firestore ke input URL ---
         const imagesDoc = await db.collection('website').doc('images').get();
         if (imagesDoc.exists) {
             const images = imagesDoc.data();
             console.log("admin-script.js: Admin: Gambar dimuat.", images);
             Object.keys(images).forEach(elementId => {
-                const inputElement = document.getElementById(`${elementId}-url`); // Ambil input URL
+                const inputElement = document.getElementById(`${elementId}-url`);
                 const preview = document.getElementById(`preview-${elementId}`);
                 if (inputElement) {
-                    inputElement.value = images[elementId]; // Set nilai input URL
+                    inputElement.value = images[elementId];
                 }
                 if (preview) {
                     preview.src = images[elementId];
@@ -226,7 +225,6 @@ async function loadAdminData() {
         } else {
             console.log("admin-script.js: Admin: Tidak ada gambar ditemukan.");
         }
-        // --- Akhir perubahan ---
 
         const menuDoc = await db.collection('website').doc('menu').get();
         if (menuDoc.exists) {
@@ -974,7 +972,7 @@ function logout() {
             showErrorMessage('Gagal logout: ' + error.message);
         });
     } else {
-        console.warn("admin-script.js: Firebase Auth tidak tersedia untuk logout.");
+        console.warn("Firebase Auth tidak tersedia untuk logout.");
         window.location.href = 'index.html';
     }
 }
