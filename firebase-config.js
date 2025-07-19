@@ -1,112 +1,55 @@
 // Firebase Configuration
-// StackBlitz WebCode Firebase Configuration
-// Disabled Firebase for StackBlitz demo - using localStorage fallback
-const firebaseConfig = null;
+// Konfigurasi Firebase yang sebenarnya untuk proyek Anda
+const firebaseConfig = {
+    apiKey: "AIzaSyAnnfK9njvEp2jPFxc-wnPldwxaNqp2GgE",
+    authDomain: "homepage-71aa8.firebaseapp.com",
+    projectId: "homepage-71aa8",
+    storageBucket: "homepage-71aa8.firebasestorage.app",
+    messagingSenderId: "238347756112",
+    appId: "1:238347756112:web:6b33d6772f3568385f2755"
+};
 
-// Initialize Firebase with error handling
+// Inisialisasi Firebase dengan penanganan kesalahan
+// Variabel ini akan tersedia secara global setelah SDK dimuat
 let auth, db, storage;
 
-// Using localStorage fallback for StackBlitz demo
-console.log('Using localStorage fallback for StackBlitz demo');
+// Inisialisasi Firebase App
+// Penting: Inisialisasi ini harus terjadi hanya sekali
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-// Mock Firebase services for development
-auth = {
-    onAuthStateChanged: (callback) => {
-        // Check for existing user in localStorage
-        const mockUser = localStorage.getItem('mockUser');
-        setTimeout(() => callback(mockUser ? JSON.parse(mockUser) : null), 100);
-        return () => {};
-    },
-    signInWithEmailAndPassword: (email, password) => {
-        return new Promise((resolve, reject) => {
-            if (email === 'admin@example.com' && password === 'admin123') {
-                const mockUser = { email: email, uid: 'mock-user-id' };
-                localStorage.setItem('mockUser', JSON.stringify(mockUser));
-                resolve({ user: mockUser });
-            } else {
-                reject(new Error('Invalid credentials'));
-            }
-        });
-    },
-    signOut: () => {
-        localStorage.removeItem('mockUser');
-        return Promise.resolve();
-    }
-};
+// Tetapkan layanan Firebase ke variabel global
+auth = firebase.auth();
+db = firebase.firestore();
+storage = firebase.storage();
 
-db = {
-    collection: (collectionName) => ({
-        doc: (docId) => ({
-            get: () => {
-                const data = localStorage.getItem(`${collectionName}_${docId}`);
-                return Promise.resolve({
-                    exists: !!data,
-                    data: () => data ? JSON.parse(data) : null
-                });
-            },
-            set: (data, options = {}) => {
-                const existingData = localStorage.getItem(`${collectionName}_${docId}`);
-                const finalData = options.merge && existingData ? 
-                    { ...JSON.parse(existingData), ...data } : data;
-                localStorage.setItem(`${collectionName}_${docId}`, JSON.stringify(finalData));
-                return Promise.resolve();
-            }
-        }),
-        add: (data) => {
-            const id = Date.now().toString();
-            localStorage.setItem(`${collectionName}_${id}`, JSON.stringify(data));
-            return Promise.resolve({ id });
-        },
-        where: () => ({
-            orderBy: () => ({
-                get: () => Promise.resolve({ empty: true, forEach: () => {} })
-            })
-        })
-    })
-};
+// Variabel global ini digunakan oleh lingkungan Canvas
+// Jangan ubah ini kecuali Anda tahu apa yang Anda lakukan
+const __firebase_config = JSON.stringify(firebaseConfig);
+const __initial_auth_token = null; // Biarkan ini null jika Anda tidak menggunakan token kustom
 
-storage = {
-    ref: () => ({
-        child: (path) => ({
-            put: (file) => {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const dataUrl = e.target.result;
-                        localStorage.setItem(`storage_${path}`, dataUrl);
-                        resolve({
-                            ref: {
-                                getDownloadURL: () => Promise.resolve(dataUrl)
-                            }
-                        });
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-        })
-    })
-};
-
-
-// Firestore Security Rules (to be set in Firebase Console)
+// Aturan Keamanan Firestore (untuk diatur di Konsol Firebase)
 /*
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read access to all users
-    match /{document=**} {
+    // Izinkan siapa saja untuk membaca data
+    // Izinkan hanya pengguna terautentikasi untuk menulis data
+    match /website/{document=**} {
       allow read: if true;
+      allow write: if request.auth != null;
     }
-    
-    // Allow write access only to authenticated users
-    match /{document=**} {
+
+    match /customPages/{document=**} {
+      allow read: if true;
       allow write: if request.auth != null;
     }
   }
 }
 */
 
-// Storage Security Rules (to be set in Firebase Console)
+// Aturan Keamanan Storage (untuk diatur di Konsol Firebase)
 /*
 rules_version = '2';
 service firebase.storage {
