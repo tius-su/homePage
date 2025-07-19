@@ -1,89 +1,12 @@
-// Global variables
-let currentUser = null;
+// Main Website JavaScript
 let websiteData = {};
+let websiteSettings = {};
 
-// Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-    setupEventListeners();
     loadWebsiteData();
+    setupEventListeners();
+    listenForAdminMessages();
 });
-
-// Initialize application
-function initializeApp() {
-    // Check authentication state
-    auth.onAuthStateChanged(user => {
-        currentUser = user;
-        if (user) {
-            console.log('User logged in:', user.email);
-            showAdminFeatures();
-        } else {
-            console.log('User logged out');
-            hideAdminFeatures();
-            // Check for mock user in localStorage
-            const mockUser = localStorage.getItem('mockUser');
-            if (mockUser) {
-                currentUser = JSON.parse(mockUser);
-                showAdminFeatures();
-            }
-        }
-    });
-}
-
-// Handle login
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    try {
-        await auth.signInWithEmailAndPassword(email, password);
-        document.getElementById('login-modal').style.display = 'none';
-        document.getElementById('login-form').reset();
-        
-        // Show success message
-        alert('Login successful! You can now access admin features.');
-        
-        // Show admin features
-        showAdminFeatures();
-    } catch (error) {
-        alert('Login failed: ' + error.message + '\n\nFor demo, use:\nEmail: admin@example.com\nPassword: admin123');
-    }
-}
-
-// Load website data from localStorage
-async function loadWebsiteData() {
-    try {
-        // Try to load from mock database first
-        const doc = await db.collection('website').doc('content').get();
-        if (doc.exists) {
-            websiteData = doc.data();
-            applyWebsiteData();
-            console.log('Website data loaded from mock database');
-        } else {
-            // Load from localStorage as fallback
-            const savedData = localStorage.getItem('websiteData');
-            if (savedData) {
-                websiteData = JSON.parse(savedData);
-                applyWebsiteData();
-                console.log('Website data loaded from localStorage');
-            }
-        }
-    } catch (error) {
-        console.log('Loading from localStorage fallback');
-        // Load from localStorage as fallback
-        const mockUser = localStorage.getItem('mockUser');
-        if (mockUser) {
-            const savedData = localStorage.getItem('websiteData');
-            if (savedData) {
-                websiteData = JSON.parse(savedData);
-                applyWebsiteData();
-                console.log('Website data loaded from localStorage fallback');
-            }
-        }
-    }
-}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -91,241 +14,425 @@ function setupEventListeners() {
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
     const mobileNav = document.getElementById('mobile-nav');
     
-    mobileMenuToggle.addEventListener('click', () => {
-        mobileNav.classList.toggle('active');
-    });
-
-    // Login modal
-    const loginModal = document.getElementById('login-modal');
-    const closeBtn = loginModal.querySelector('.close');
-    const loginForm = document.getElementById('login-form');
-
-    closeBtn.addEventListener('click', () => {
-        loginModal.style.display = 'none';
-    });
-
-    window.addEventListener('click', (e) => {
-        if (e.target === loginModal) {
-            loginModal.style.display = 'none';
-        }
-    });
-
-    // Login form submission
-    loginForm.addEventListener('submit', handleLogin);
-
-    // Smooth scrolling for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
+    if (mobileMenuToggle && mobileNav) {
+        mobileMenuToggle.addEventListener('click', () => {
+            mobileNav.classList.toggle('active');
         });
-    });
-}
-
-// Show login modal
-function showLogin() {
-    document.getElementById('login-modal').style.display = 'block';
-}
-
-// Show admin features
-function showAdminFeatures() {
-    // Add edit buttons to content areas
-    addEditButtons();
-}
-
-// Hide admin features
-function hideAdminFeatures() {
-    // Remove edit buttons
-    removeEditButtons();
-}
-
-// Add edit buttons to content areas
-function addEditButtons() {
-    const editableElements = [
-        'session1-title1', 'session1-title2', 'session2-heading',
-        'session2-col1-heading', 'session2-col1-content',
-        'session2-col2-heading', 'session2-col2-content',
-        'session2-col3-heading', 'session2-col3-content',
-        'session3-col1-heading', 'session3-col1-content',
-        'session3-col2-part1-heading', 'session3-col2-part1-content',
-        'session3-col2-part2-heading', 'session3-col2-part2-content',
-        'session4-col1-heading', 'session4-col1-content',
-        'session4-col2-heading', 'session4-col2-content',
-        'footer-text'
-    ];
-
-    editableElements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element && !element.querySelector('.edit-btn')) {
-            const editBtn = document.createElement('button');
-            editBtn.className = 'edit-btn';
-            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-            editBtn.onclick = () => editContent(id);
-            element.style.position = 'relative';
-            element.appendChild(editBtn);
-        }
-    });
-}
-
-// Remove edit buttons
-function removeEditButtons() {
-    document.querySelectorAll('.edit-btn').forEach(btn => btn.remove());
-}
-
-// Edit content
-function editContent(elementId) {
-    const element = document.getElementById(elementId);
-    const currentContent = element.innerHTML.replace(/<button.*?<\/button>/g, '');
-    
-    const newContent = prompt('Edit content:', currentContent);
-    if (newContent !== null) {
-        element.innerHTML = newContent;
-        saveWebsiteData();
     }
-}
 
-// Apply website data to elements
-function applyWebsiteData() {
-    Object.keys(websiteData).forEach(key => {
-        const element = document.getElementById(key);
-        if (element) {
-            if (key.includes('image') || key.includes('logo')) {
-                element.src = websiteData[key];
+    // Read More functionality
+    document.querySelectorAll('.content-editor').forEach(editorDiv => {
+        const fullContent = editorDiv.innerHTML;
+        const readMoreBtn = editorDiv.nextElementSibling; // Assuming button is next sibling
+
+        if (readMoreBtn && readMoreBtn.classList.contains('read-more-btn')) {
+            // Check if content is longer than a certain height to enable read more
+            if (editorDiv.scrollHeight > editorDiv.clientHeight || editorDiv.textContent.length > 200) { // Simple check
+                editorDiv.classList.add('collapsed');
+                readMoreBtn.style.display = 'block'; // Show button
+                readMoreBtn.onclick = () => {
+                    editorDiv.classList.toggle('collapsed');
+                    readMoreBtn.textContent = editorDiv.classList.contains('collapsed') ? 'Read More' : 'Read Less';
+                };
             } else {
-                element.innerHTML = websiteData[key];
+                readMoreBtn.style.display = 'none'; // Hide button if content is short
             }
         }
     });
 }
 
-// Save website data to localStorage
-async function saveWebsiteData() {
+// Load website data from Firebase
+async function loadWebsiteData() {
     try {
-        // Collect current content
-        const contentElements = [
-            'session1-title1', 'session1-title2', 'session2-heading',
-            'session2-col1-heading', 'session2-col1-content',
-            'session2-col2-heading', 'session2-col2-content',
-            'session2-col3-heading', 'session2-col3-content',
-            'session3-col1-heading', 'session3-col1-content',
-            'session3-col2-part1-heading', 'session3-col2-part1-content',
-            'session3-col2-part2-heading', 'session3-col2-part2-content',
-            'session4-col1-heading', 'session4-col1-content',
-            'session4-col2-heading', 'session4-col2-content',
-            'footer-text'
-        ];
+        // Load content data
+        const contentDoc = await db.collection('website').doc('content').get();
+        if (contentDoc.exists) {
+            websiteData = contentDoc.data();
+            applyWebsiteContent(websiteData);
+        }
 
-        const imageElements = [
-            'header-logo', 'footer-logo', 'session2-main-image',
-            'session2-col1-image', 'session2-col2-image', 'session2-col3-image',
-            'session3-col1-image', 'session4-col1-image',
-            'session5-col1-image', 'session5-col2-image',
-            'session5-col3-image', 'session5-col4-image'
-        ];
+        // Load settings data
+        const settingsDoc = await db.collection('website').doc('settings').get();
+        if (settingsDoc.exists) {
+            websiteSettings = settingsDoc.data();
+            applyWebsiteSettings(websiteSettings);
+        }
 
-        const data = {};
+        // Load image assignments
+        const imagesDoc = await db.collection('website').doc('images').get();
+        if (imagesDoc.exists) {
+            const images = imagesDoc.data();
+            applyImageAssignments(images);
+        }
 
-        contentElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                data[id] = element.innerHTML.replace(/<button.*?<\/button>/g, '');
-            }
-        });
+        // Load menu items
+        const menuDoc = await db.collection('website').doc('menu').get();
+        if (menuDoc.exists) {
+            const menuItems = menuDoc.data().items || [];
+            updateMenu(menuItems);
+        }
 
-        imageElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                data[id] = element.src;
-            }
-        });
-
-        // Save to mock database
-        await db.collection('website').doc('content').set(data);
-        console.log('Website data saved to mock database successfully');
-        
-        // Also save to localStorage for offline access
-        localStorage.setItem('websiteData', JSON.stringify(data));
     } catch (error) {
-        console.log('Error saving to mock database, using localStorage:', error);
-        // Fallback to localStorage
-        localStorage.setItem('websiteData', JSON.stringify(data));
-        console.log('Saved to localStorage as fallback');
+        console.error('Error loading website data:', error);
     }
 }
 
-// Open detail page
-function openDetail(slug) {
-    window.location.href = `detail.html?id=${slug}`;
+// Apply website content
+function applyWebsiteContent(data) {
+    // Session 1
+    document.getElementById('session1-title1').textContent = data.session1?.title1 || 'Welcome to Our Professional Website';
+    document.getElementById('session1-title2').textContent = data.session1?.title2 || 'Your Success is Our Priority';
+
+    // Session 2
+    document.getElementById('session2-heading').textContent = data.session2?.heading || 'Our Services';
+    document.getElementById('session2-col1-heading').textContent = data.session2?.col1Heading || 'Web Development';
+    document.getElementById('session2-col1-content').innerHTML = data.session2?.col1Content || 'Professional web development services with modern technologies and responsive design.';
+    document.getElementById('session2-col2-heading').textContent = data.session2?.col2Heading || 'Digital Marketing';
+    document.getElementById('session2-col2-content').innerHTML = data.session2?.col2Content || 'Comprehensive digital marketing strategies to grow your business online.';
+    document.getElementById('session2-col3-heading').textContent = data.session2?.col3Heading || 'Consulting';
+    document.getElementById('session2-col3-content').innerHTML = data.session2?.col3Content || 'Expert business consulting to help you make informed decisions.';
+
+    // Session 3
+    document.getElementById('session3-col1-heading').textContent = data.session3?.col1Heading || 'About Our Company';
+    document.getElementById('session3-col1-content').innerHTML = data.session3?.col1Content || 'We are a leading company in providing innovative solutions for businesses worldwide. Our team of experts is dedicated to delivering exceptional results.';
+    document.getElementById('session3-col2-part1-heading').textContent = data.session3?.col2Part1Heading || 'Our Mission';
+    document.getElementById('session3-col2-part1-content').innerHTML = data.session3?.col2Part1Content || 'To empower businesses with cutting-edge technology and strategic insights.';
+    document.getElementById('session3-col2-part2-heading').textContent = data.session3?.col2Part2Heading || 'Our Vision';
+    document.getElementById('session3-col2-part2-content').innerHTML = data.session3?.col2Part2Content || 'To be the global leader in digital transformation and business innovation.';
+    document.getElementById('session3-col3-heading').textContent = data.session3?.col3Heading || 'Our Values'; // New column
+    document.getElementById('session3-col3-content').innerHTML = data.session3?.col3Content || 'Integrity, innovation, and customer satisfaction are at the core of everything we do. We believe in building lasting relationships with our clients.'; // New column
+    applyReadMore('session3-col3-content', data.session3?.col3Readmore); // Apply readmore for new column
+
+    // Session 4
+    document.getElementById('session4-col1-heading').textContent = data.session4?.col1Heading || 'Our Expertise';
+    document.getElementById('session4-col1-content').innerHTML = data.session4?.col1Content || 'With years of experience in the industry, we have developed expertise in various domains including technology, marketing, and business strategy.';
+    document.getElementById('session4-col2-heading').textContent = data.session4?.col2Heading || 'Why Choose Us';
+    document.getElementById('session4-col2-content').innerHTML = data.session4?.col2Content || 'We offer personalized solutions, 24/7 support, and proven results. Our client-centric approach ensures your success is our top priority.';
+    document.getElementById('session4-col3-heading').textContent = data.session4?.col3Heading || 'Our Process'; // New column
+    document.getElementById('session4-col3-content').innerHTML = data.session4?.col3Content || 'Our streamlined process ensures efficient project delivery from conception to completion, keeping you informed every step of the way.'; // New column
+    applyReadMore('session4-col3-content', data.session4?.col3Readmore); // Apply readmore for new column
+
+    // Session 5
+    document.getElementById('session5-col1-heading').textContent = data.session5?.col1Heading || 'Project Alpha';
+    document.getElementById('session5-col1-content').innerHTML = data.session5?.col1Content || 'Innovative web application development.';
+    document.getElementById('session5-col2-heading').textContent = data.session5?.col2Heading || 'Project Beta';
+    document.getElementById('session5-col2-content').innerHTML = data.session5?.col2Content || 'Mobile app development and deployment.';
+    document.getElementById('session5-col3-heading').textContent = data.session5?.col3Heading || 'Project Gamma';
+    document.getElementById('session5-col3-content').innerHTML = data.session5?.col3Content || 'E-commerce platform optimization.';
+    document.getElementById('session5-col4-heading').textContent = data.session5?.col4Heading || 'Project Delta';
+    document.getElementById('session5-col4-content').innerHTML = data.session5?.col4Content || 'Digital marketing campaign success.';
+
+    // Session 6 (Photo Gallery)
+    document.getElementById('session6').querySelector('.section-heading').textContent = data.session6?.heading || 'Photo Gallery';
+    renderGallery('photo-gallery-grid', data.session6?.items || [], 'image');
+
+    // Session 7 (Video Gallery)
+    document.getElementById('session7').querySelector('.section-heading').textContent = data.session7?.heading || 'Video Gallery';
+    renderGallery('video-gallery-grid', data.session7?.items || [], 'video');
 }
 
-// Logout function
-function logout() {
-    auth.signOut().then(() => {
-        localStorage.removeItem('mockUser');
-        window.location.href = 'index.html';
+// Apply website settings (colors, fonts, etc.)
+function applyWebsiteSettings(settings) {
+    // Apply colors
+    document.documentElement.style.setProperty('--header-bg-color', settings['header-bg-color'] || '#2c3e50');
+    document.documentElement.style.setProperty('--footer-bg-color', settings['footer-bg-color'] || '#2c3e50');
+    document.documentElement.style.setProperty('--session1-bg-color', settings['session1-bg-color'] || '#667eea');
+    document.documentElement.style.setProperty('--session2-bg-color', settings['session2-bg-color'] || '#f8f9fa');
+    document.documentElement.style.setProperty('--session3-bg-color', settings['session3-bg-color'] || '#ffffff'); // Added
+    document.documentElement.style.setProperty('--session4-bg-color', settings['session4-bg-color'] || '#f8f9fa'); // Added
+    document.documentElement.style.setProperty('--session5-bg-color', settings['session5-bg-color'] || '#ffffff'); // Added
+    document.documentElement.style.setProperty('--session6-bg-color', settings['session6-bg-color'] || '#f8f9fa'); // Added
+    document.documentElement.style.setProperty('--session7-bg-color', settings['session7-bg-color'] || '#ffffff'); // Added
+
+    // Apply font sizes
+    document.documentElement.style.setProperty('--main-title-size', settings['main-title-size'] || '3rem');
+    document.documentElement.style.setProperty('--section-heading-size', settings['section-heading-size'] || '2.5rem');
+    document.documentElement.style.setProperty('--body-font', settings['body-font'] || "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
+
+    // Apply animation and hover effects (these need more complex JS/CSS handling)
+    // For now, simple class toggling or style application
+    const heroImage = document.querySelector('.hero-image');
+    if (heroImage) {
+        heroImage.style.animation = settings['hero-animation'] !== 'none' ? `${settings['hero-animation']} 1s ease-out` : 'none';
+    }
+    document.querySelectorAll('.card').forEach(card => {
+        card.style.transform = settings['card-hover'] || 'translateY(-5px)';
+    });
+
+    // Apply grid layout for Session 5
+    updateSession5GridLayout(settings['session5-layout']);
+
+    // Toggle social media visibility
+    toggleElementVisibility('.social-icons', settings['show-social']);
+
+    // Toggle section visibility
+    toggleElementVisibility('#session6', settings['show-session6']);
+    toggleElementVisibility('#session7', settings['show-session7']);
+
+    // Apply column visibility for Sessions 2-7
+    toggleElementVisibility('#session2-col1', settings['show-session2-col1']);
+    toggleElementVisibility('#session2-col2', settings['show-session2-col2']);
+    toggleElementVisibility('#session2-col3', settings['show-session2-col3']);
+
+    toggleElementVisibility('#session3-col1', settings['show-session3-col1']);
+    toggleElementVisibility('#session3-col2', settings['show-session3-col2']);
+    toggleElementVisibility('#session3-col3', settings['show-session3-col3']); // New column
+
+    toggleElementVisibility('#session4-col1', settings['show-session4-col1']);
+    toggleElementVisibility('#session4-col2', settings['show-session4-col2']);
+    toggleElementVisibility('#session4-col3', settings['show-session4-col3']); // New column
+
+    toggleElementVisibility('#session5-col1', settings['show-session5-col1']);
+    toggleElementVisibility('#session5-col2', settings['show-session5-col2']);
+    toggleElementVisibility('#session5-col3', settings['show-session5-col3']);
+    toggleElementVisibility('#session5-col4', settings['show-session5-col4']);
+
+    toggleElementVisibility('#session6-gallery', settings['show-session6-gallery']);
+    toggleElementVisibility('#session7-gallery', settings['show-session7-gallery']);
+}
+
+// Apply image assignments
+function applyImageAssignments(images) {
+    Object.keys(images).forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.src = images[elementId];
+        }
     });
 }
 
-// Upload image function
-async function uploadImage(file, path) {
-    const storageRef = storage.ref().child(`images/${path}/${file.name}`);
-    const snapshot = await storageRef.put(file);
-    const downloadURL = await snapshot.ref.getDownloadURL();
-    return downloadURL;
+// Update menu items
+function updateMenu(items) {
+    const desktopMenu = document.getElementById('menu-items');
+    const mobileMenu = document.getElementById('mobile-menu-items');
+    
+    if (desktopMenu) {
+        desktopMenu.innerHTML = '';
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = item.url;
+            a.textContent = item.name;
+            li.appendChild(a);
+            desktopMenu.appendChild(li);
+        });
+    }
+
+    if (mobileMenu) {
+        mobileMenu.innerHTML = '';
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = item.url;
+            a.textContent = item.name;
+            li.appendChild(a);
+            mobileMenu.appendChild(li);
+        });
+    }
 }
 
-// YouTube video embed function
-function embedYouTubeVideo(url, containerId) {
-    const videoId = extractYouTubeVideoId(url);
-    if (videoId) {
-        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        const container = document.getElementById(containerId);
-        const iframe = container.querySelector('iframe');
-        if (iframe) {
-            iframe.src = embedUrl;
-            container.style.display = 'block';
-            // Hide image if video is shown
-            const imageContainer = document.getElementById(containerId.replace('video', 'image'));
-            if (imageContainer) {
-                imageContainer.style.display = 'none';
-            }
+
+// Listen for messages from the admin panel
+function listenForAdminMessages() {
+    window.addEventListener('message', function(event) {
+        // Ensure the message is from a trusted origin if deployed
+        // if (event.origin !== "your_admin_panel_origin") return;
+
+        const message = event.data;
+        switch (message.type) {
+            case 'updateStyle':
+                document.documentElement.style.setProperty(message.property, message.value);
+                break;
+            case 'updateImage':
+                const imgElement = document.getElementById(message.elementId);
+                if (imgElement) {
+                    imgElement.src = message.url;
+                }
+                break;
+            case 'embedVideo':
+                const videoContainer = document.getElementById(message.containerId);
+                if (videoContainer) {
+                    const iframe = videoContainer.querySelector('iframe');
+                    if (iframe) {
+                        iframe.src = message.url.replace("watch?v=", "embed/"); // Basic YouTube embed
+                        videoContainer.style.display = 'block';
+                        const heroImage = videoContainer.previousElementSibling;
+                        if (heroImage && heroImage.tagName === 'IMG') {
+                            heroImage.style.display = 'none';
+                        }
+                    }
+                }
+                break;
+            case 'updateAnimation':
+                const animElement = document.querySelector(message.selector);
+                if (animElement) {
+                    animElement.style.animation = message.animation !== 'none' ? `${message.animation} 1s ease-out` : 'none';
+                }
+                break;
+            case 'updateHover':
+                // This is more complex and typically handled via CSS classes
+                // For simplicity, we'll just apply a style directly for now
+                document.querySelectorAll(message.selector).forEach(el => {
+                    el.style.transform = message.effect;
+                });
+                break;
+            case 'updateGridLayout':
+                updateSession5GridLayout(message.columns);
+                break;
+            case 'toggleElement':
+                toggleElementVisibility(message.selector, message.show);
+                break;
+            case 'updateContent':
+                // Update specific content based on session ID
+                if (message.sessionId === 'session1') {
+                    document.getElementById('session1-title1').textContent = message.data.title1;
+                    document.getElementById('session1-title2').textContent = message.data.title2;
+                } else if (message.sessionId === 'session2') {
+                    document.getElementById('session2-heading').textContent = message.data.heading;
+                    document.getElementById('session2-col1-heading').textContent = message.data.col1Heading;
+                    document.getElementById('session2-col1-content').innerHTML = message.data.col1Content;
+                    document.getElementById('session2-col2-heading').textContent = message.data.col2Heading;
+                    document.getElementById('session2-col2-content').innerHTML = message.data.col2Content;
+                    document.getElementById('session2-col3-heading').textContent = message.data.col3Heading;
+                    document.getElementById('session2-col3-content').innerHTML = message.data.col3Content;
+                } else if (message.sessionId === 'session3') {
+                    document.getElementById('session3-col1-heading').textContent = message.data.col1Heading;
+                    document.getElementById('session3-col1-content').innerHTML = message.data.col1Content;
+                    document.getElementById('session3-col2-part1-heading').textContent = message.data.col2Part1Heading;
+                    document.getElementById('session3-col2-part1-content').innerHTML = message.data.col2Part1Content;
+                    document.getElementById('session3-col2-part2-heading').textContent = message.data.col2Part2Heading;
+                    document.getElementById('session3-col2-part2-content').innerHTML = message.data.col2Part2Content;
+                    document.getElementById('session3-col3-heading').textContent = message.data.col3Heading; // New column
+                    document.getElementById('session3-col3-content').innerHTML = message.data.col3Content; // New column
+                    applyReadMore('session3-col3-content', message.data.col3Readmore); // Apply readmore for new column
+                } else if (message.sessionId === 'session4') {
+                    document.getElementById('session4-col1-heading').textContent = message.data.col1Heading;
+                    document.getElementById('session4-col1-content').innerHTML = message.data.col1Content;
+                    document.getElementById('session4-col2-heading').textContent = message.data.col2Heading;
+                    document.getElementById('session4-col2-content').innerHTML = message.data.col2Content;
+                    document.getElementById('session4-col3-heading').textContent = message.data.col3Heading; // New column
+                    document.getElementById('session4-col3-content').innerHTML = message.data.col3Content; // New column
+                    applyReadMore('session4-col3-content', message.data.col3Readmore); // Apply readmore for new column
+                } else if (message.sessionId === 'session5') {
+                    document.getElementById('session5-col1-heading').textContent = message.data.col1Heading;
+                    document.getElementById('session5-col1-content').innerHTML = message.data.col1Content;
+                    document.getElementById('session5-col2-heading').textContent = message.data.col2Heading;
+                    document.getElementById('session5-col2-content').innerHTML = message.data.col2Content;
+                    document.getElementById('session5-col3-heading').textContent = message.data.col3Heading;
+                    document.getElementById('session5-col3-content').innerHTML = message.data.col3Content;
+                    document.getElementById('session5-col4-heading').textContent = message.data.col4Heading;
+                    document.getElementById('session5-col4-content').innerHTML = message.data.col4Content;
+                } else if (message.sessionId === 'session6') {
+                    document.getElementById('session6').querySelector('.section-heading').textContent = message.data.heading;
+                    renderGallery('photo-gallery-grid', message.data.items || [], 'image');
+                } else if (message.sessionId === 'session7') {
+                    document.getElementById('session7').querySelector('.section-heading').textContent = message.data.heading;
+                    renderGallery('video-gallery-grid', message.data.items || [], 'video');
+                }
+                break;
+            case 'updateMenu':
+                updateMenu(message.menuItems);
+                break;
+        }
+    }, false);
+}
+
+// Generic function to toggle element visibility
+function toggleElementVisibility(selector, show) {
+    const element = document.querySelector(selector);
+    if (element) {
+        element.style.display = show ? '' : 'none';
+    }
+}
+
+// Update Session 5 grid layout
+function updateSession5GridLayout(columns) {
+    const session5Grid = document.getElementById('session5-grid');
+    if (session5Grid) {
+        // Remove existing column classes
+        session5Grid.classList.remove('grid-2-cols', 'grid-3-cols', 'grid-4-cols');
+        // Add the new column class
+        if (columns === '2') {
+            session5Grid.classList.add('grid-2-cols');
+        } else if (columns === '3') {
+            session5Grid.classList.add('grid-3-cols');
+        } else if (columns === '4') {
+            session5Grid.classList.add('grid-4-cols');
         }
     }
 }
 
-// Extract YouTube video ID from URL
-function extractYouTubeVideoId(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-}
+// Apply read more functionality
+function applyReadMore(contentId, enableReadMore) {
+    const contentDiv = document.getElementById(contentId);
+    if (!contentDiv) return;
 
-// Animation functions
-function animateElement(elementId, animationType) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.style.animation = `${animationType} 1s ease-out`;
+    let readMoreBtn = contentDiv.nextElementSibling;
+    if (!readMoreBtn || !readMoreBtn.classList.contains('read-more-btn')) {
+        readMoreBtn = document.createElement('button');
+        readMoreBtn.className = 'read-more-btn';
+        contentDiv.parentNode.insertBefore(readMoreBtn, contentDiv.nextElementSibling);
+    }
+
+    if (enableReadMore) {
+        const fullContent = contentDiv.innerHTML;
+        const shortContent = fullContent.substring(0, 200) + '...'; // Adjust length as needed
+
+        if (fullContent.length > 200) { // Only apply if content is actually long
+            contentDiv.innerHTML = shortContent;
+            contentDiv.classList.add('collapsed');
+            readMoreBtn.textContent = 'Read More';
+            readMoreBtn.style.display = 'block';
+            readMoreBtn.onclick = () => {
+                if (contentDiv.classList.contains('collapsed')) {
+                    contentDiv.innerHTML = fullContent;
+                    contentDiv.classList.remove('collapsed');
+                    readMoreBtn.textContent = 'Read Less';
+                } else {
+                    contentDiv.innerHTML = shortContent;
+                    contentDiv.classList.add('collapsed');
+                    readMoreBtn.textContent = 'Read More';
+                }
+            };
+        } else {
+            contentDiv.classList.remove('collapsed');
+            readMoreBtn.style.display = 'none';
+        }
+    } else {
+        contentDiv.classList.remove('collapsed');
+        readMoreBtn.style.display = 'none';
     }
 }
 
-// Toggle section visibility
-function toggleSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.style.display = section.style.display === 'none' ? 'block' : 'none';
-    }
-}
+// Render gallery items on the main website
+function renderGallery(containerId, items, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-// Change grid layout for session 5
-function changeGridLayout(columns) {
-    const grid = document.getElementById('session5-grid');
-    if (grid) {
-        grid.className = `four-columns grid-${columns}`;
-    }
+    container.innerHTML = ''; // Clear existing items
+
+    items.forEach(item => {
+        const galleryItemDiv = document.createElement('div');
+        galleryItemDiv.className = 'gallery-item';
+
+        if (type === 'image') {
+            const img = document.createElement('img');
+            img.src = item.url;
+            img.alt = 'Gallery Image';
+            galleryItemDiv.appendChild(img);
+        } else if (type === 'video') {
+            const iframe = document.createElement('iframe');
+            iframe.src = item.url.includes('youtube.com') ? item.url.replace("watch?v=", "embed/") : item.url; // Basic YouTube embed
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allowfullscreen', '');
+            galleryItemDiv.appendChild(iframe);
+        }
+        // You can add a title or description if your gallery items have them
+        // const title = document.createElement('div');
+        // title.className = 'title';
+        // title.textContent = item.title || ''; // Assuming a title property
+        // galleryItemDiv.appendChild(title);
+
+        container.appendChild(galleryItemDiv);
+    });
 }
