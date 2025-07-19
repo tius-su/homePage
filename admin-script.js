@@ -9,7 +9,7 @@ let menuItems = [];
 
 // Konfigurasi Cloudinary (Ganti dengan milik Anda)
 const CLOUDINARY_CLOUD_NAME = 'dyvoydnx8'; // Ganti ini
-const CLOUDINARY_UPLOAD_PRESET = 'Yhome-pages'; // Ganti ini (unsigned preset)
+const CLOUDINARY_UPLOAD_PRESET = 'home-pages'; // Ganti ini (unsigned preset)
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log("admin-script.js: DOMContentLoaded fired. Showing loading overlay.");
