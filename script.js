@@ -41,6 +41,7 @@ function initializeFirebaseAndLoadData() {
                 }
             }
             // Setelah status auth dikonfirmasi, setup listener Firestore
+            console.log("Firebase Auth state confirmed. Setting up Firestore listeners.");
             setupFirestoreListeners();
         });
     } else {
@@ -49,12 +50,14 @@ function initializeFirebaseAndLoadData() {
         auth = window.auth; 
         db = window.db;
         storage = window.storage;
+        console.log("Using mock Firebase. Setting up Firestore listeners.");
         setupFirestoreListeners(); // Tetap coba memuat data dengan layanan mock
     }
 }
 
 // Setup Firestore real-time listeners
 function setupFirestoreListeners() {
+    console.log("setupFirestoreListeners called.");
     if (!db) {
         console.error("Firestore DB object is not initialized. Cannot set up listeners.");
         return;
@@ -64,10 +67,10 @@ function setupFirestoreListeners() {
     db.collection('website').doc('settings').onSnapshot(doc => {
         if (doc.exists) {
             websiteSettings = doc.data();
+            console.log("Firestore: Settings updated.", websiteSettings);
             applyWebsiteSettings(websiteSettings);
-            console.log("Website settings updated from Firebase:", websiteSettings);
         } else {
-            console.log("No website settings found in Firebase. Applying default settings.");
+            console.log("Firestore: No website settings found. Applying default settings.");
             applyWebsiteSettings({}); 
         }
     }, error => {
@@ -78,10 +81,10 @@ function setupFirestoreListeners() {
     db.collection('website').doc('content').onSnapshot(doc => {
         if (doc.exists) {
             websiteData = doc.data();
+            console.log("Firestore: Content updated.", websiteData);
             applyWebsiteContent(websiteData);
-            console.log("Website content updated from Firebase:", websiteData);
         } else {
-            console.log("No website content found in Firebase. Applying default content.");
+            console.log("Firestore: No website content found. Applying default content.");
             applyWebsiteContent({});
         }
     }, error => {
@@ -92,10 +95,10 @@ function setupFirestoreListeners() {
     db.collection('website').doc('images').onSnapshot(doc => {
         if (doc.exists) {
             const images = doc.data();
+            console.log("Firestore: Image assignments updated.", images);
             applyImageAssignments(images);
-            console.log("Image assignments updated from Firebase:", images);
         } else {
-            console.log("No image assignments found in Firebase. Applying default images.");
+            console.log("Firestore: No image assignments found. Applying default images.");
             applyImageAssignments({});
         }
     }, error => {
@@ -106,10 +109,10 @@ function setupFirestoreListeners() {
     db.collection('website').doc('menu').onSnapshot(doc => {
         if (doc.exists) {
             const menuItems = doc.data().items || [];
+            console.log("Firestore: Menu items updated.", menuItems);
             updateMenu(menuItems);
-            console.log("Menu items updated from Firebase:", menuItems);
         } else {
-            console.log("No menu items found in Firebase. Applying default menu.");
+            console.log("Firestore: No menu items found. Applying default menu.");
             updateMenu([]);
         }
     }, error => {
@@ -222,8 +225,10 @@ function applyWebsiteSettings(settings) {
     // Alihkan visibilitas media sosial
     toggleElementVisibility('#social-icons', settings['show-social']);
 
-    // Alihkan visibilitas sesi
+    // Alihkan visibilitas sesi 6 dan 7
+    console.log(`Applying visibility for Session 6: ${settings['show-session6']}`);
     toggleElementVisibility('#session6', settings['show-session6']);
+    console.log(`Applying visibility for Session 7: ${settings['show-session7']}`);
     toggleElementVisibility('#session7', settings['show-session7']);
 
     // Terapkan visibilitas kolom untuk Sesi 2-7
@@ -289,7 +294,11 @@ function updateMenu(items) {
 function toggleElementVisibility(selector, show) {
     const element = document.querySelector(selector);
     if (element) {
+        console.log(`Toggling visibility for ${selector}. Current display: ${element.style.display}. Desired show: ${show}`);
         element.style.display = show ? '' : 'none'; // Gunakan string kosong untuk kembali ke tampilan default
+        console.log(`New display for ${selector}: ${element.style.display}`);
+    } else {
+        console.warn(`Element with selector ${selector} not found.`);
     }
 }
 
