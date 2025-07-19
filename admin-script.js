@@ -902,7 +902,7 @@ async function saveContentToFirebase(sessionId, contentData) {
             [sessionId]: contentData
         }, { merge: true });
     } catch (error) {
-        console.error('admin-script.js: Kesalahan saat menyimpan konten ke Firebase:', error);
+        console.error('admin-script.js: Kesalahan saat menyimpan konten:', error);
         throw error;
     }
 }
@@ -1026,7 +1026,7 @@ function logout() {
             showErrorMessage('Gagal logout: ' + error.message);
         });
     } else {
-        console.warn("Firebase Auth tidak tersedia untuk logout.");
+        console.warn("admin-script.js: Firebase Auth tidak tersedia untuk logout.");
         window.location.href = 'index.html';
     }
 }
