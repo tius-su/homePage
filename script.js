@@ -1,7 +1,7 @@
 // Main Website JavaScript
 let websiteData = {};
 let websiteSettings = {};
-let auth, db, storage; // Declare Firebase variables for this script's scope
+// Variabel auth, db, storage akan diakses langsung dari objek global 'firebase'
 
 document.addEventListener('DOMContentLoaded', function() {
     // Inisialisasi Firebase dan setup listener
@@ -15,108 +15,108 @@ function initializeFirebaseAndLoadData() {
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-    if (firebaseConfig) {
-        // Inisialisasi Firebase App
-        const app = firebase.initializeApp(firebaseConfig);
-        auth = app.auth();
-        db = app.firestore();
-        storage = app.storage();
-
-        // Sign in secara anonim atau dengan token kustom
-        auth.onAuthStateChanged(async (user) => {
-            if (!user) {
-                try {
-                    if (initialAuthToken) {
-                        await auth.signInWithCustomToken(initialAuthToken);
-                        console.log("Signed in with custom token.");
-                    } else {
-                        await auth.signInAnonymously();
-                        console.log("Signed in anonymously.");
-                    }
-                } catch (error) {
-                    console.error("Error during initial sign-in:", error);
-                    // Fallback jika token kustom gagal
-                    await auth.signInAnonymously();
-                    console.log("Signed in anonymously after token error.");
-                }
-            }
-            // Setelah status auth dikonfirmasi, setup listener Firestore
-            console.log("Firebase Auth state confirmed. Setting up Firestore listeners.");
-            setupFirestoreListeners();
-        });
-    } else {
-        console.warn("Firebase config not found. Using mock Firebase services (if available).");
-        // Jika tidak ada firebaseConfig, asumsikan layanan mock sudah diatur secara global
-        auth = window.auth; 
-        db = window.db;
-        storage = window.storage;
-        console.log("Using mock Firebase. Setting up Firestore listeners.");
-        setupFirestoreListeners(); // Tetap coba memuat data dengan layanan mock
+    // Pastikan objek 'firebase' global tersedia
+    if (typeof firebase === 'undefined' || !firebase.apps.length) {
+        console.error("script.js: Objek Firebase global tidak ditemukan atau tidak diinisialisasi. Pastikan firebase-config.js dimuat dengan benar.");
+        // Fallback untuk lingkungan di mana Firebase mungkin di-mock
+        // Jika window.auth, window.db, window.storage tersedia dari mock, gunakan itu
+        if (window.auth && window.db && window.storage) {
+            console.warn("script.js: Menggunakan layanan mock Firebase.");
+            setupFirestoreListeners(); // Tetap coba memuat data dengan layanan mock
+        } else {
+            console.error("script.js: Layanan Firebase (mock atau asli) tidak tersedia. Tidak dapat melanjutkan.");
+        }
+        return;
     }
+
+    // Sign in secara anonim atau dengan token kustom
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) {
+            try {
+                if (initialAuthToken) {
+                    await firebase.auth().signInWithCustomToken(initialAuthToken);
+                    console.log("script.js: Signed in with custom token.");
+                } else {
+                    await firebase.auth().signInAnonymously();
+                    console.log("script.js: Signed in anonymously.");
+                }
+            } catch (error) {
+                console.error("script.js: Error during initial sign-in:", error);
+                // Fallback jika token kustom gagal
+                await firebase.auth().signInAnonymously();
+                console.log("script.js: Signed in anonymously after token error.");
+            }
+        }
+        // Setelah status auth dikonfirmasi, setup listener Firestore
+        console.log("script.js: Status Auth Firebase dikonfirmasi. Menyiapkan listener Firestore.");
+        setupFirestoreListeners();
+    });
 }
 
 // Setup Firestore real-time listeners
 function setupFirestoreListeners() {
-    console.log("setupFirestoreListeners called.");
-    if (!db) {
-        console.error("Firestore DB object is not initialized. Cannot set up listeners.");
+    console.log("script.js: setupFirestoreListeners dipanggil.");
+    if (typeof firebase.firestore === 'undefined') {
+        console.error("script.js: Objek Firebase Firestore tidak diinisialisasi. Tidak dapat menyiapkan listener.");
         return;
     }
+
+    const db = firebase.firestore(); // Dapatkan instance Firestore
 
     // Dengarkan perubahan pengaturan situs web
     db.collection('website').doc('settings').onSnapshot(doc => {
         if (doc.exists) {
             websiteSettings = doc.data();
-            console.log("Firestore: Settings updated.", websiteSettings);
+            console.log("script.js: Firestore: Pengaturan diperbarui.", websiteSettings);
             applyWebsiteSettings(websiteSettings);
         } else {
-            console.log("Firestore: No website settings found. Applying default settings.");
+            console.log("script.js: Firestore: Tidak ada pengaturan situs web ditemukan. Menerapkan pengaturan default.");
             applyWebsiteSettings({}); 
         }
     }, error => {
-        console.error("Error listening to settings:", error);
+        console.error("script.js: Kesalahan saat mendengarkan pengaturan:", error);
     });
 
     // Dengarkan perubahan konten situs web
     db.collection('website').doc('content').onSnapshot(doc => {
         if (doc.exists) {
             websiteData = doc.data();
-            console.log("Firestore: Content updated.", websiteData);
+            console.log("script.js: Firestore: Konten diperbarui.", websiteData);
             applyWebsiteContent(websiteData);
         } else {
-            console.log("Firestore: No website content found. Applying default content.");
+            console.log("script.js: Firestore: Tidak ada konten situs web ditemukan. Menerapkan konten default.");
             applyWebsiteContent({});
         }
     }, error => {
-        console.error("Error listening to content:", error);
+        console.error("script.js: Kesalahan saat mendengarkan konten:", error);
     });
 
     // Dengarkan penugasan gambar
     db.collection('website').doc('images').onSnapshot(doc => {
         if (doc.exists) {
             const images = doc.data();
-            console.log("Firestore: Image assignments updated.", images);
+            console.log("script.js: Firestore: Penugasan gambar diperbarui.", images);
             applyImageAssignments(images);
         } else {
-            console.log("Firestore: No image assignments found. Applying default images.");
+            console.log("script.js: Firestore: Tidak ada penugasan gambar ditemukan. Menerapkan gambar default.");
             applyImageAssignments({});
         }
     }, error => {
-        console.error("Error listening to images:", error);
+        console.error("script.js: Kesalahan saat mendengarkan gambar:", error);
     });
 
     // Dengarkan perubahan item menu
     db.collection('website').doc('menu').onSnapshot(doc => {
         if (doc.exists) {
             const menuItems = doc.data().items || [];
-            console.log("Firestore: Menu items updated.", menuItems);
+            console.log("script.js: Firestore: Item menu diperbarui.", menuItems);
             updateMenu(menuItems);
         } else {
-            console.log("Firestore: No menu items found. Applying default menu.");
+            console.log("script.js: Firestore: Tidak ada item menu ditemukan. Menerapkan menu default.");
             updateMenu([]);
         }
     }, error => {
-        console.error("Error listening to menu:", error);
+        console.error("script.js: Kesalahan saat mendengarkan menu:", error);
     });
 }
 
@@ -226,9 +226,9 @@ function applyWebsiteSettings(settings) {
     toggleElementVisibility('#social-icons', settings['show-social']);
 
     // Alihkan visibilitas sesi 6 dan 7
-    console.log(`Applying visibility for Session 6: ${settings['show-session6']}`);
+    console.log(`script.js: Menerapkan visibilitas untuk Sesi 6: ${settings['show-session6']}`);
     toggleElementVisibility('#session6', settings['show-session6']);
-    console.log(`Applying visibility for Session 7: ${settings['show-session7']}`);
+    console.log(`script.js: Menerapkan visibilitas untuk Sesi 7: ${settings['show-session7']}`);
     toggleElementVisibility('#session7', settings['show-session7']);
 
     // Terapkan visibilitas kolom untuk Sesi 2-7
@@ -294,11 +294,11 @@ function updateMenu(items) {
 function toggleElementVisibility(selector, show) {
     const element = document.querySelector(selector);
     if (element) {
-        console.log(`Toggling visibility for ${selector}. Current display: ${element.style.display}. Desired show: ${show}`);
+        console.log(`script.js: Mengalihkan visibilitas untuk ${selector}. Tampilan saat ini: ${element.style.display}. Tampilan yang diinginkan: ${show}`);
         element.style.display = show ? '' : 'none'; // Gunakan string kosong untuk kembali ke tampilan default
-        console.log(`New display for ${selector}: ${element.style.display}`);
+        console.log(`script.js: Tampilan aktual setelah pengaturan: ${element.style.display}`);
     } else {
-        console.warn(`Element with selector ${selector} not found.`);
+        console.warn(`script.js: Elemen dengan selektor ${selector} tidak ditemukan.`);
     }
 }
 
