@@ -1,14 +1,115 @@
 // Main Website JavaScript
 let websiteData = {};
 let websiteSettings = {};
+let db, auth; // Declare Firebase variables
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadWebsiteData();
+    initializeFirebaseAndLoadData();
     setupEventListeners();
-    listenForAdminMessages();
 });
 
-// Setup event listeners
+// Initialize Firebase and set up listeners
+async function initializeFirebaseAndLoadData() {
+    // Firebase config is globally available from firebase-config.js
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : null);
+    
+    if (firebaseConfig) {
+        const app = firebase.initializeApp(firebaseConfig);
+        db = app.firestore();
+        auth = app.auth();
+
+        // Sign in anonymously if no initial auth token, or use custom token
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        if (initialAuthToken) {
+            try {
+                await auth.signInWithCustomToken(initialAuthToken);
+                console.log("Signed in with custom token.");
+            } catch (error) {
+                console.error("Error signing in with custom token:", error);
+                await auth.signInAnonymously(); // Fallback to anonymous
+                console.log("Signed in anonymously due to custom token error.");
+            }
+        } else {
+            await auth.signInAnonymously();
+            console.log("Signed in anonymously.");
+        }
+
+        // Once authenticated, set up real-time listeners
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log("Firebase Auth state changed. User:", user.uid);
+                setupFirestoreListeners();
+            } else {
+                console.log("Firebase Auth state changed. No user.");
+                // Optionally handle UI for logged out state or anonymous
+            }
+        });
+    } else {
+        console.warn("Firebase config not found. Using mock Firebase services.");
+        // Fallback to mock services if firebaseConfig is null (e.g., StackBlitz demo)
+        // Ensure mock services are globally available from firebase-config.js
+        db = window.db; 
+        auth = window.auth;
+        setupFirestoreListeners(); // Still try to load data with mock services
+    }
+}
+
+// Setup Firestore real-time listeners
+function setupFirestoreListeners() {
+    // Listen for website settings changes
+    db.collection('website').doc('settings').onSnapshot(doc => {
+        if (doc.exists) {
+            websiteSettings = doc.data();
+            applyWebsiteSettings(websiteSettings);
+            console.log("Website settings updated from Firebase.");
+        } else {
+            console.log("No website settings found in Firebase.");
+        }
+    }, error => {
+        console.error("Error listening to settings:", error);
+    });
+
+    // Listen for website content changes
+    db.collection('website').doc('content').onSnapshot(doc => {
+        if (doc.exists) {
+            websiteData = doc.data();
+            applyWebsiteContent(websiteData);
+            console.log("Website content updated from Firebase.");
+        } else {
+            console.log("No website content found in Firebase.");
+        }
+    }, error => {
+        console.error("Error listening to content:", error);
+    });
+
+    // Listen for image assignments
+    db.collection('website').doc('images').onSnapshot(doc => {
+        if (doc.exists) {
+            const images = doc.data();
+            applyImageAssignments(images);
+            console.log("Image assignments updated from Firebase.");
+        } else {
+            console.log("No image assignments found in Firebase.");
+        }
+    }, error => {
+        console.error("Error listening to images:", error);
+    });
+
+    // Listen for menu item changes
+    db.collection('website').doc('menu').onSnapshot(doc => {
+        if (doc.exists) {
+            const menuItems = doc.data().items || [];
+            updateMenu(menuItems);
+            console.log("Menu items updated from Firebase.");
+        } else {
+            console.log("No menu items found in Firebase.");
+        }
+    }, error => {
+        console.error("Error listening to menu:", error);
+    });
+}
+
+// Setup event listeners for UI interactions
 function setupEventListeners() {
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
@@ -19,65 +120,9 @@ function setupEventListeners() {
             mobileNav.classList.toggle('active');
         });
     }
-
-    // Read More functionality
-    document.querySelectorAll('.content-editor').forEach(editorDiv => {
-        const fullContent = editorDiv.innerHTML;
-        const readMoreBtn = editorDiv.nextElementSibling; // Assuming button is next sibling
-
-        if (readMoreBtn && readMoreBtn.classList.contains('read-more-btn')) {
-            // Check if content is longer than a certain height to enable read more
-            if (editorDiv.scrollHeight > editorDiv.clientHeight || editorDiv.textContent.length > 200) { // Simple check
-                editorDiv.classList.add('collapsed');
-                readMoreBtn.style.display = 'block'; // Show button
-                readMoreBtn.onclick = () => {
-                    editorDiv.classList.toggle('collapsed');
-                    readMoreBtn.textContent = editorDiv.classList.contains('collapsed') ? 'Read More' : 'Read Less';
-                };
-            } else {
-                readMoreBtn.style.display = 'none'; // Hide button if content is short
-            }
-        }
-    });
 }
 
-// Load website data from Firebase
-async function loadWebsiteData() {
-    try {
-        // Load content data
-        const contentDoc = await db.collection('website').doc('content').get();
-        if (contentDoc.exists) {
-            websiteData = contentDoc.data();
-            applyWebsiteContent(websiteData);
-        }
-
-        // Load settings data
-        const settingsDoc = await db.collection('website').doc('settings').get();
-        if (settingsDoc.exists) {
-            websiteSettings = settingsDoc.data();
-            applyWebsiteSettings(websiteSettings);
-        }
-
-        // Load image assignments
-        const imagesDoc = await db.collection('website').doc('images').get();
-        if (imagesDoc.exists) {
-            const images = imagesDoc.data();
-            applyImageAssignments(images);
-        }
-
-        // Load menu items
-        const menuDoc = await db.collection('website').doc('menu').get();
-        if (menuDoc.exists) {
-            const menuItems = menuDoc.data().items || [];
-            updateMenu(menuItems);
-        }
-
-    } catch (error) {
-        console.error('Error loading website data:', error);
-    }
-}
-
-// Apply website content
+// Apply website content to the DOM
 function applyWebsiteContent(data) {
     // Session 1
     document.getElementById('session1-title1').textContent = data.session1?.title1 || 'Welcome to Our Professional Website';
@@ -113,6 +158,7 @@ function applyWebsiteContent(data) {
     applyReadMore('session4-col3-content', data.session4?.col3Readmore); // Apply readmore for new column
 
     // Session 5
+    document.getElementById('session5-heading').textContent = data.session5?.heading || 'Our Portfolio';
     document.getElementById('session5-col1-heading').textContent = data.session5?.col1Heading || 'Project Alpha';
     document.getElementById('session5-col1-content').innerHTML = data.session5?.col1Content || 'Innovative web application development.';
     document.getElementById('session5-col2-heading').textContent = data.session5?.col2Heading || 'Project Beta';
@@ -123,47 +169,46 @@ function applyWebsiteContent(data) {
     document.getElementById('session5-col4-content').innerHTML = data.session5?.col4Content || 'Digital marketing campaign success.';
 
     // Session 6 (Photo Gallery)
-    document.getElementById('session6').querySelector('.section-heading').textContent = data.session6?.heading || 'Photo Gallery';
+    document.getElementById('session6-heading').textContent = data.session6?.heading || 'Photo Gallery';
     renderGallery('photo-gallery-grid', data.session6?.items || [], 'image');
 
     // Session 7 (Video Gallery)
-    document.getElementById('session7').querySelector('.section-heading').textContent = data.session7?.heading || 'Video Gallery';
+    document.getElementById('session7-heading').textContent = data.session7?.heading || 'Video Gallery';
     renderGallery('video-gallery-grid', data.session7?.items || [], 'video');
 }
 
-// Apply website settings (colors, fonts, etc.)
+// Apply website settings (colors, fonts, visibility, etc.)
 function applyWebsiteSettings(settings) {
     // Apply colors
     document.documentElement.style.setProperty('--header-bg-color', settings['header-bg-color'] || '#2c3e50');
     document.documentElement.style.setProperty('--footer-bg-color', settings['footer-bg-color'] || '#2c3e50');
     document.documentElement.style.setProperty('--session1-bg-color', settings['session1-bg-color'] || '#667eea');
     document.documentElement.style.setProperty('--session2-bg-color', settings['session2-bg-color'] || '#f8f9fa');
-    document.documentElement.style.setProperty('--session3-bg-color', settings['session3-bg-color'] || '#ffffff'); // Added
-    document.documentElement.style.setProperty('--session4-bg-color', settings['session4-bg-color'] || '#f8f9fa'); // Added
-    document.documentElement.style.setProperty('--session5-bg-color', settings['session5-bg-color'] || '#ffffff'); // Added
-    document.documentElement.style.setProperty('--session6-bg-color', settings['session6-bg-color'] || '#f8f9fa'); // Added
-    document.documentElement.style.setProperty('--session7-bg-color', settings['session7-bg-color'] || '#ffffff'); // Added
+    document.documentElement.style.setProperty('--session3-bg-color', settings['session3-bg-color'] || '#ffffff');
+    document.documentElement.style.setProperty('--session4-bg-color', settings['session4-bg-color'] || '#f8f9fa');
+    document.documentElement.style.setProperty('--session5-bg-color', settings['session5-bg-color'] || '#ffffff');
+    document.documentElement.style.setProperty('--session6-bg-color', settings['session6-bg-color'] || '#f8f9fa');
+    document.documentElement.style.setProperty('--session7-bg-color', settings['session7-bg-color'] || '#ffffff');
 
     // Apply font sizes
     document.documentElement.style.setProperty('--main-title-size', settings['main-title-size'] || '3rem');
     document.documentElement.style.setProperty('--section-heading-size', settings['section-heading-size'] || '2.5rem');
     document.documentElement.style.setProperty('--body-font', settings['body-font'] || "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
 
-    // Apply animation and hover effects (these need more complex JS/CSS handling)
-    // For now, simple class toggling or style application
+    // Apply animation and hover effects
     const heroImage = document.querySelector('.hero-image');
     if (heroImage) {
-        heroImage.style.animation = settings['hero-animation'] !== 'none' ? `${settings['hero-animation']} 1s ease-out` : 'none';
+        heroImage.style.animation = settings['hero-animation'] && settings['hero-animation'] !== 'none' ? `${settings['hero-animation']} 1s ease-out` : 'none';
     }
     document.querySelectorAll('.card').forEach(card => {
-        card.style.transform = settings['card-hover'] || 'translateY(-5px)';
+        card.style.transform = settings['card-hover'] || 'translateY(0)'; // Default to no transform if 'none' or not set
     });
 
     // Apply grid layout for Session 5
     updateSession5GridLayout(settings['session5-layout']);
 
     // Toggle social media visibility
-    toggleElementVisibility('.social-icons', settings['show-social']);
+    toggleElementVisibility('#social-icons', settings['show-social']);
 
     // Toggle section visibility
     toggleElementVisibility('#session6', settings['show-session6']);
@@ -176,19 +221,16 @@ function applyWebsiteSettings(settings) {
 
     toggleElementVisibility('#session3-col1', settings['show-session3-col1']);
     toggleElementVisibility('#session3-col2', settings['show-session3-col2']);
-    toggleElementVisibility('#session3-col3', settings['show-session3-col3']); // New column
+    toggleElementVisibility('#session3-col3', settings['show-session3-col3']);
 
     toggleElementVisibility('#session4-col1', settings['show-session4-col1']);
     toggleElementVisibility('#session4-col2', settings['show-session4-col2']);
-    toggleElementVisibility('#session4-col3', settings['show-session4-col3']); // New column
+    toggleElementVisibility('#session4-col3', settings['show-session4-col3']);
 
     toggleElementVisibility('#session5-col1', settings['show-session5-col1']);
     toggleElementVisibility('#session5-col2', settings['show-session5-col2']);
     toggleElementVisibility('#session5-col3', settings['show-session5-col3']);
     toggleElementVisibility('#session5-col4', settings['show-session5-col4']);
-
-    toggleElementVisibility('#session6-gallery', settings['show-session6-gallery']);
-    toggleElementVisibility('#session7-gallery', settings['show-session7-gallery']);
 }
 
 // Apply image assignments
@@ -231,117 +273,11 @@ function updateMenu(items) {
     }
 }
 
-
-// Listen for messages from the admin panel
-function listenForAdminMessages() {
-    window.addEventListener('message', function(event) {
-        // Ensure the message is from a trusted origin if deployed
-        // if (event.origin !== "your_admin_panel_origin") return;
-
-        const message = event.data;
-        switch (message.type) {
-            case 'updateStyle':
-                document.documentElement.style.setProperty(message.property, message.value);
-                break;
-            case 'updateImage':
-                const imgElement = document.getElementById(message.elementId);
-                if (imgElement) {
-                    imgElement.src = message.url;
-                }
-                break;
-            case 'embedVideo':
-                const videoContainer = document.getElementById(message.containerId);
-                if (videoContainer) {
-                    const iframe = videoContainer.querySelector('iframe');
-                    if (iframe) {
-                        iframe.src = message.url.replace("watch?v=", "embed/"); // Basic YouTube embed
-                        videoContainer.style.display = 'block';
-                        const heroImage = videoContainer.previousElementSibling;
-                        if (heroImage && heroImage.tagName === 'IMG') {
-                            heroImage.style.display = 'none';
-                        }
-                    }
-                }
-                break;
-            case 'updateAnimation':
-                const animElement = document.querySelector(message.selector);
-                if (animElement) {
-                    animElement.style.animation = message.animation !== 'none' ? `${message.animation} 1s ease-out` : 'none';
-                }
-                break;
-            case 'updateHover':
-                // This is more complex and typically handled via CSS classes
-                // For simplicity, we'll just apply a style directly for now
-                document.querySelectorAll(message.selector).forEach(el => {
-                    el.style.transform = message.effect;
-                });
-                break;
-            case 'updateGridLayout':
-                updateSession5GridLayout(message.columns);
-                break;
-            case 'toggleElement':
-                toggleElementVisibility(message.selector, message.show);
-                break;
-            case 'updateContent':
-                // Update specific content based on session ID
-                if (message.sessionId === 'session1') {
-                    document.getElementById('session1-title1').textContent = message.data.title1;
-                    document.getElementById('session1-title2').textContent = message.data.title2;
-                } else if (message.sessionId === 'session2') {
-                    document.getElementById('session2-heading').textContent = message.data.heading;
-                    document.getElementById('session2-col1-heading').textContent = message.data.col1Heading;
-                    document.getElementById('session2-col1-content').innerHTML = message.data.col1Content;
-                    document.getElementById('session2-col2-heading').textContent = message.data.col2Heading;
-                    document.getElementById('session2-col2-content').innerHTML = message.data.col2Content;
-                    document.getElementById('session2-col3-heading').textContent = message.data.col3Heading;
-                    document.getElementById('session2-col3-content').innerHTML = message.data.col3Content;
-                } else if (message.sessionId === 'session3') {
-                    document.getElementById('session3-col1-heading').textContent = message.data.col1Heading;
-                    document.getElementById('session3-col1-content').innerHTML = message.data.col1Content;
-                    document.getElementById('session3-col2-part1-heading').textContent = message.data.col2Part1Heading;
-                    document.getElementById('session3-col2-part1-content').innerHTML = message.data.col2Part1Content;
-                    document.getElementById('session3-col2-part2-heading').textContent = message.data.col2Part2Heading;
-                    document.getElementById('session3-col2-part2-content').innerHTML = message.data.col2Part2Content;
-                    document.getElementById('session3-col3-heading').textContent = message.data.col3Heading; // New column
-                    document.getElementById('session3-col3-content').innerHTML = message.data.col3Content; // New column
-                    applyReadMore('session3-col3-content', message.data.col3Readmore); // Apply readmore for new column
-                } else if (message.sessionId === 'session4') {
-                    document.getElementById('session4-col1-heading').textContent = message.data.col1Heading;
-                    document.getElementById('session4-col1-content').innerHTML = message.data.col1Content;
-                    document.getElementById('session4-col2-heading').textContent = message.data.col2Heading;
-                    document.getElementById('session4-col2-content').innerHTML = message.data.col2Content;
-                    document.getElementById('session4-col3-heading').textContent = message.data.col3Heading; // New column
-                    document.getElementById('session4-col3-content').innerHTML = message.data.col3Content; // New column
-                    applyReadMore('session4-col3-content', message.data.col3Readmore); // Apply readmore for new column
-                } else if (message.sessionId === 'session5') {
-                    document.getElementById('session5-col1-heading').textContent = message.data.col1Heading;
-                    document.getElementById('session5-col1-content').innerHTML = message.data.col1Content;
-                    document.getElementById('session5-col2-heading').textContent = message.data.col2Heading;
-                    document.getElementById('session5-col2-content').innerHTML = message.data.col2Content;
-                    document.getElementById('session5-col3-heading').textContent = message.data.col3Heading;
-                    document.getElementById('session5-col3-content').innerHTML = message.data.col3Content;
-                    document.getElementById('session5-col4-heading').textContent = message.data.col4Heading;
-                    document.getElementById('session5-col4-content').innerHTML = message.data.col4Content;
-                } else if (message.sessionId === 'session6') {
-                    document.getElementById('session6').querySelector('.section-heading').textContent = message.data.heading;
-                    renderGallery('photo-gallery-grid', message.data.items || [], 'image');
-                } else if (message.sessionId === 'session7') {
-                    document.getElementById('session7').querySelector('.section-heading').textContent = message.data.heading;
-                    renderGallery('video-gallery-grid', message.data.items || [], 'video');
-                }
-                break;
-            case 'updateMenu':
-                updateMenu(message.menuItems);
-                break;
-        }
-    }, false);
-}
-
 // Generic function to toggle element visibility
 function toggleElementVisibility(selector, show) {
     const element = document.querySelector(selector);
     if (element) {
-        element.style.display = show ? '' : 'none';
+        element.style.display = show ? '' : 'none'; // Use empty string to revert to default display
     }
 }
 
@@ -368,41 +304,39 @@ function applyReadMore(contentId, enableReadMore) {
     if (!contentDiv) return;
 
     let readMoreBtn = contentDiv.nextElementSibling;
+    // Create read more button if it doesn't exist or is not the correct button
     if (!readMoreBtn || !readMoreBtn.classList.contains('read-more-btn')) {
         readMoreBtn = document.createElement('button');
         readMoreBtn.className = 'read-more-btn';
+        readMoreBtn.textContent = 'Read More';
         contentDiv.parentNode.insertBefore(readMoreBtn, contentDiv.nextElementSibling);
     }
 
-    if (enableReadMore) {
-        const fullContent = contentDiv.innerHTML;
-        const shortContent = fullContent.substring(0, 200) + '...'; // Adjust length as needed
-
-        if (fullContent.length > 200) { // Only apply if content is actually long
-            contentDiv.innerHTML = shortContent;
-            contentDiv.classList.add('collapsed');
-            readMoreBtn.textContent = 'Read More';
-            readMoreBtn.style.display = 'block';
-            readMoreBtn.onclick = () => {
-                if (contentDiv.classList.contains('collapsed')) {
-                    contentDiv.innerHTML = fullContent;
-                    contentDiv.classList.remove('collapsed');
-                    readMoreBtn.textContent = 'Read Less';
-                } else {
-                    contentDiv.innerHTML = shortContent;
-                    contentDiv.classList.add('collapsed');
-                    readMoreBtn.textContent = 'Read More';
-                }
-            };
-        } else {
-            contentDiv.classList.remove('collapsed');
-            readMoreBtn.style.display = 'none';
-        }
+    const fullContent = websiteData[contentId.split('-')[0]]?.[contentId.split('-')[1]] || ''; // Get original content from websiteData
+    
+    if (enableReadMore && fullContent.length > 200) { // Only apply if content is long and readmore is enabled
+        contentDiv.innerHTML = fullContent.substring(0, 200) + '...'; // Set initial collapsed content
+        contentDiv.classList.add('collapsed');
+        readMoreBtn.textContent = 'Read More';
+        readMoreBtn.style.display = 'block';
+        readMoreBtn.onclick = () => {
+            if (contentDiv.classList.contains('collapsed')) {
+                contentDiv.innerHTML = fullContent;
+                contentDiv.classList.remove('collapsed');
+                readMoreBtn.textContent = 'Read Less';
+            } else {
+                contentDiv.innerHTML = fullContent.substring(0, 200) + '...';
+                contentDiv.classList.add('collapsed');
+                readMoreBtn.textContent = 'Read More';
+            }
+        };
     } else {
+        contentDiv.innerHTML = fullContent; // Show full content
         contentDiv.classList.remove('collapsed');
-        readMoreBtn.style.display = 'none';
+        readMoreBtn.style.display = 'none'; // Hide button
     }
 }
+
 
 // Render gallery items on the main website
 function renderGallery(containerId, items, type) {
@@ -421,18 +355,28 @@ function renderGallery(containerId, items, type) {
             img.alt = 'Gallery Image';
             galleryItemDiv.appendChild(img);
         } else if (type === 'video') {
+            // Extract video ID for YouTube/Vimeo embeds
+            let embedUrl = item.url;
+            if (item.url.includes('youtube.com/watch?v=')) {
+                const videoId = item.url.split('v=')[1]?.split('&')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            } else if (item.url.includes('vimeo.com/')) {
+                const videoId = item.url.split('vimeo.com/')[1]?.split('?')[0];
+                embedUrl = `https://player.vimeo.com/video/${videoId}`;
+            }
+
             const iframe = document.createElement('iframe');
-            iframe.src = item.url.includes('youtube.com') ? item.url.replace("watch?v=", "embed/") : item.url; // Basic YouTube embed
+            iframe.src = embedUrl;
             iframe.setAttribute('frameborder', '0');
             iframe.setAttribute('allowfullscreen', '');
+            iframe.setAttribute('loading', 'lazy'); // Optimize loading
             galleryItemDiv.appendChild(iframe);
         }
-        // You can add a title or description if your gallery items have them
-        // const title = document.createElement('div');
-        // title.className = 'title';
-        // title.textContent = item.title || ''; // Assuming a title property
-        // galleryItemDiv.appendChild(title);
-
         container.appendChild(galleryItemDiv);
     });
+}
+
+// Function to open detail page (existing functionality)
+function openDetail(id) {
+    window.location.href = `detail.html?id=${id}`;
 }
