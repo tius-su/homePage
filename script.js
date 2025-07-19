@@ -29,6 +29,7 @@ function initializeFirebaseAndLoadData() {
     }
 
     // Sign in secara anonim atau dengan token kustom
+    // Menggunakan try...catch di sini untuk menangkap kesalahan signInAnonymously
     firebase.auth().onAuthStateChanged(async (user) => {
         if (!user) {
             try {
@@ -36,17 +37,23 @@ function initializeFirebaseAndLoadData() {
                     await firebase.auth().signInWithCustomToken(initialAuthToken);
                     console.log("script.js: Signed in with custom token.");
                 } else {
+                    // Coba sign in anonim
                     await firebase.auth().signInAnonymously();
                     console.log("script.js: Signed in anonymously.");
                 }
             } catch (error) {
-                console.error("script.js: Error during initial sign-in:", error);
-                // Fallback jika token kustom gagal
-                await firebase.auth().signInAnonymously();
-                console.log("script.js: Signed in anonymously after token error.");
+                console.error("script.js: Kesalahan saat sign-in anonim:", error.code, error.message);
+                // Menampilkan pesan kesalahan yang lebih spesifik kepada pengguna jika diperlukan
+                if (error.code === 'auth/operation-not-allowed') {
+                    console.error("script.js: Autentikasi anonim tidak diaktifkan di konsol Firebase Anda.");
+                } else if (error.code === 'auth/network-request-failed') {
+                    console.error("script.js: Kesalahan jaringan saat mencoba autentikasi.");
+                }
+                // Jika sign-in anonim gagal, mungkin tidak ada akses ke Firestore
+                console.warn("script.js: Gagal melakukan sign-in anonim. Akses ke Firestore mungkin dibatasi.");
             }
         }
-        // Setelah status auth dikonfirmasi, setup listener Firestore
+        // Setelah status auth dikonfirmasi (atau gagal), setup listener Firestore
         console.log("script.js: Status Auth Firebase dikonfirmasi. Menyiapkan listener Firestore.");
         setupFirestoreListeners();
     });
