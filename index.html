@@ -74,19 +74,19 @@
                 <h3 id="session2-heading" class="section-heading">Our Services</h3>
                 
                 <div class="three-columns" id="session2-columns">
-                    <div class="column card">
+                    <div class="column card" id="session2-col1">
                         <img id="session2-col1-image" src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop" alt="Service 1">
                         <h4 id="session2-col1-heading">Web Development</h4>
                         <p id="session2-col1-content">Professional web development services with modern technologies and responsive design.</p>
                         <button class="read-more-btn" onclick="openDetail('service1')">Read More</button>
                     </div>
-                    <div class="column card">
+                    <div class="column card" id="session2-col2">
                         <img id="session2-col2-image" src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop" alt="Service 2">
                         <h4 id="session2-col2-heading">Digital Marketing</h4>
                         <p id="session2-col2-content">Comprehensive digital marketing strategies to grow your business online.</p>
                         <button class="read-more-btn" onclick="openDetail('service2')">Read More</button>
                     </div>
-                    <div class="column card">
+                    <div class="column card" id="session2-col3">
                         <img id="session2-col3-image" src="https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop" alt="Service 3">
                         <h4 id="session2-col3-heading">Consulting</h4>
                         <p id="session2-col3-content">Expert business consulting to help you make informed decisions.</p>
@@ -99,15 +99,15 @@
         <!-- Session 3 -->
         <section id="session3" class="session session3">
             <div class="container">
-                <div class="two-columns">
-                    <div class="column">
+                <div class="two-columns" id="session3-columns">
+                    <div class="column" id="session3-col1">
                         <h3 id="session3-col1-heading">About Our Company</h3>
                         <img id="session3-col1-image" src="https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" alt="About Us">
                         <div id="session3-col1-content" class="content-editor">
                             <p>We are a leading company in providing innovative solutions for businesses worldwide. Our team of experts is dedicated to delivering exceptional results.</p>
                         </div>
                     </div>
-                    <div class="column">
+                    <div class="column" id="session3-col2">
                         <div class="sub-section">
                             <h4 id="session3-col2-part1-heading">Our Mission</h4>
                             <div id="session3-col2-part1-content" class="content-editor">
@@ -123,6 +123,13 @@
                             <button class="read-more-btn" onclick="openDetail('vision')">Read More</button>
                         </div>
                     </div>
+                    <div class="column" id="session3-col3">
+                        <h3 id="session3-col3-heading">Our Values</h3>
+                        <div id="session3-col3-content" class="content-editor">
+                            <p>Integrity, innovation, and customer satisfaction are at the core of everything we do. We believe in building lasting relationships with our clients.</p>
+                        </div>
+                        <button class="read-more-btn" onclick="openDetail('values')">Read More</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -130,20 +137,27 @@
         <!-- Session 4 -->
         <section id="session4" class="session session4">
             <div class="container">
-                <div class="two-columns">
-                    <div class="column">
+                <div class="two-columns" id="session4-columns">
+                    <div class="column" id="session4-col1">
                         <h3 id="session4-col1-heading">Our Expertise</h3>
                         <img id="session4-col1-image" src="https://images.pexels.com/photos/3184317/pexels-photo-3184317.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" alt="Expertise">
                         <div id="session4-col1-content" class="content-editor">
                             <p>With years of experience in the industry, we have developed expertise in various domains including technology, marketing, and business strategy.</p>
                         </div>
                     </div>
-                    <div class="column">
+                    <div class="column" id="session4-col2">
                         <h3 id="session4-col2-heading">Why Choose Us</h3>
                         <div id="session4-col2-content" class="content-editor">
                             <p>We offer personalized solutions, 24/7 support, and proven results. Our client-centric approach ensures your success is our top priority.</p>
                         </div>
                         <button class="read-more-btn" onclick="openDetail('why-choose-us')">Read More</button>
+                    </div>
+                    <div class="column" id="session4-col3">
+                        <h3 id="session4-col3-heading">Our Process</h3>
+                        <div id="session4-col3-content" class="content-editor">
+                            <p>Our streamlined process ensures efficient project delivery from conception to completion, keeping you informed every step of the way.</p>
+                        </div>
+                        <button class="read-more-btn" onclick="openDetail('our-process')">Read More</button>
                     </div>
                 </div>
             </div>
@@ -153,7 +167,7 @@
         <section id="session5" class="session session5">
             <div class="container">
                 <div class="four-columns" id="session5-grid">
-                    <div class="column card">
+                    <div class="column card" id="session5-col1">
                         <img id="session5-col1-image" src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop" alt="Portfolio 1">
                         <div id="session5-col1-content" class="content-editor">
                             <h4>Project Alpha</h4>
@@ -161,7 +175,7 @@
                         </div>
                         <button class="read-more-btn" onclick="openDetail('project-alpha')">Read More</button>
                     </div>
-                    <div class="column card">
+                    <div class="column card" id="session5-col2">
                         <img id="session5-col2-image" src="https://images.pexels.com/photos/3184419/pexels-photo-3184419.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop" alt="Portfolio 2">
                         <div id="session5-col2-content" class="content-editor">
                             <h4>Project Beta</h4>
@@ -169,7 +183,7 @@
                         </div>
                         <button class="read-more-btn" onclick="openDetail('project-beta')">Read More</button>
                     </div>
-                    <div class="column card">
+                    <div class="column card" id="session5-col3">
                         <img id="session5-col3-image" src="https://images.pexels.com/photos/3184420/pexels-photo-3184420.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop" alt="Portfolio 3">
                         <div id="session5-col3-content" class="content-editor">
                             <h4>Project Gamma</h4>
@@ -177,7 +191,7 @@
                         </div>
                         <button class="read-more-btn" onclick="openDetail('project-gamma')">Read More</button>
                     </div>
-                    <div class="column card">
+                    <div class="column card" id="session5-col4">
                         <img id="session5-col4-image" src="https://images.pexels.com/photos/3184421/pexels-photo-3184421.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop" alt="Portfolio 4">
                         <div id="session5-col4-content" class="content-editor">
                             <h4>Project Delta</h4>
@@ -189,16 +203,23 @@
             </div>
         </section>
 
-        <!-- Session 6 & 7 - Reserved for future use -->
+        <!-- Session 6 - Photo Gallery -->
         <section id="session6" class="session session6" style="display: none;">
             <div class="container">
-                <h3>Session 6 - Reserved</h3>
+                <h3 class="section-heading">Photo Gallery</h3>
+                <div class="gallery-grid" id="photo-gallery-grid">
+                    <!-- Images will be loaded here -->
+                </div>
             </div>
         </section>
 
+        <!-- Session 7 - Video Gallery -->
         <section id="session7" class="session session7" style="display: none;">
             <div class="container">
-                <h3>Session 7 - Reserved</h3>
+                <h3 class="section-heading">Video Gallery</h3>
+                <div class="gallery-grid" id="video-gallery-grid">
+                    <!-- Videos will be loaded here -->
+                </div>
             </div>
         </section>
     </main>
@@ -216,29 +237,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Login Modal -->
-    <div id="login-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Admin Login</h2>
-            <div class="demo-credentials">
-                <p><strong>Demo Credentials:</strong></p>
-                <p>Email: admin@example.com</p>
-                <p>Password: admin123</p>
-            </div>
-            <form id="login-form">
-                <input type="email" id="email" placeholder="Email" value="admin@example.com" required>
-                <input type="password" id="password" placeholder="Password" value="admin123" required>
-                <button type="submit">Login</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Admin Panel Button -->
-    <button id="admin-btn" class="admin-btn" onclick="showLogin()">
-        <i class="fas fa-cog"></i>
-    </button>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
