@@ -8,8 +8,8 @@ let menuItems = [];
 // Tidak perlu mendeklarasikannya di sini karena SDK compat sudah membuatnya global
 
 // Konfigurasi Cloudinary (Ganti dengan milik Anda)
-const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUDINARY_CLOUD_NAME'; // Ganti ini
-const CLOUDINARY_UPLOAD_PRESET = 'YOUR_CLOUDINARY_UPLOAD_PRESET'; // Ganti ini (unsigned preset)
+const CLOUDINARY_CLOUD_NAME = 'Ydyvoydnx8'; // Ganti ini
+const CLOUDINARY_UPLOAD_PRESET = 'home-pages'; // Ganti ini (unsigned preset)
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log("admin-script.js: DOMContentLoaded fired. Showing loading overlay.");
